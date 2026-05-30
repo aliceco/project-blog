@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+:root {
+  --font-size: 16px;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --background: #F6F1EA;
+  --foreground: #1C1713;
+  --card: #FAF7F2;
+  --card-foreground: #1C1713;
+  --popover: #FAF7F2;
+  --popover-foreground: #1C1713;
+  --primary: #1C1713;
+  --primary-foreground: #F6F1EA;
+  --secondary: #EDE7DC;
+  --secondary-foreground: #1C1713;
+  --muted: #E8E1D5;
+  --muted-foreground: #7A6F62;
+  --accent: #C2714F;
+  --accent-foreground: #FAF7F2;
+  --destructive: #c0392b;
+  --destructive-foreground: #ffffff;
+  --border: rgba(28, 23, 19, 0.12);
+  --input: transparent;
+  --input-background: #EDE7DC;
+  --switch-background: #C4B8A8;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #C2714F;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+h1 {
+  font-family: var(--font-display);
+  /* font-size: 4rem; */
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h2 {
+  font-family: var(--font-display);
+  /* font-size: 1.25rem; */
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h3 {
+  font-family: var(--font-display);
+  /* font-size: 1.125rem; */
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h4 {
+  font-family: var(--font-display);
+}
+
+h4,
+label,
+button,
+input {
+  /* font-size: 1rem; */
+  line-height: 1.5;
+}
+
+label,
+button {
+  font-weight: var(--font-weight-medium);
+}
+
+input {
+  font-weight: var(--font-weight-normal);
+}

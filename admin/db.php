@@ -1,0 +1,262 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Enkel databasmodul (MySQLi + Prepared Statements)
+|--------------------------------------------------------------------------
+| Denna fil innehåller funktioner för att:
+| - ansluta till databasen
+| - lägga till användare
+| - uppdatera användare
+| - ta bort användare
+| - hämta en eller flera användare
+| 
+| Du ska lägga till alla funktioner som du behöver
+| och ändra i de befintliga om det behövs
+|
+| Viktigt:
+| - Alla SQL-frågor använder prepared statements (skydd mot SQL injection)
+| - Samma databasanslutning återanvänds under hela scriptets körning
+| - Lösenord som skickas in ska redan vara hashade (password_hash)
+|
+*/
+
+// Sökväg till din lokala db_credentials.php
+$localPath = __DIR__ . '/db_credentials.php';
+
+// Sökväg till db_credentials.php på webbservern
+// VIKTIGT: Byt USER mot ditt användarnamn
+$serverPath = '/var/private/USER/db_credentials.php'; 
+
+// Om skriptet körs på webbservern används $serverPath
+// Annars används $localPath för att läsa in dina lokala databasuppgifter
+if (file_exists($serverPath)) {
+    require_once($serverPath);
+} elseif (file_exists($localPath)) {
+    require_once($localPath);
+} else {
+    die("Kunde inte hitta db_credentials.php.");
+}
+function connect()
+{
+    // static gör att variabeln "lever kvar" mellan funktionsanrop
+    // Det betyder att vi bara skapar EN databasanslutning per request
+    static $connection = null;
+
+    // Om anslutning redan finns – återanvänd den
+    if ($connection !== null) {
+        return $connection;
+    }
+
+    // Skapa ny anslutning till databasen 
+    $connection = mysqli_connect(DB_SERVER, DB_USER, DB_PASS, DB_NAME);
+
+     // Om anslutningen misslyckas avbryts programmet
+    if (!$connection) {
+        die("Connection failed: " . mysqli_connect_error());
+    }
+
+    // Sätt teckenkodning till utf8mb4 (viktigt för att stödja alla tecken, t.ex. emoji)
+    mysqli_set_charset($connection, 'utf8mb4');
+
+    return $connection;
+}
+
+function add_user($username, $hashedPassword, $email)
+{
+    // OBS: $hashedPassword ska vara skapat med password_hash()
+    // Spara ALDRIG lösenord i klartext i databasen.
+
+    $connection = connect();
+
+    // ? är platshållare (placeholders)
+    // Detta skyddar mot SQL injection
+    $sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "sss", $username, $hashedPassword, $email);
+
+    $success = mysqli_stmt_execute($stmt);
+
+    // Om insert misslyckas (t.ex. duplicate username) returneras false
+    if (!$success) {
+        mysqli_stmt_close($stmt);
+        return false;
+    }
+
+    // Hämtar id från AUTO_INCREMENT-kolumnen
+    $newId = mysqli_insert_id($connection);
+
+    mysqli_stmt_close($stmt);
+
+    return $newId; // Returnera id för posten
+}
+
+function change_username($id, $newUsername)
+{
+    $connection = connect();
+
+    $sql = "UPDATE users SET username = ? WHERE id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "si", $newUsername, $id);
+    mysqli_stmt_execute($stmt);
+
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    // Returnerar antal påverkade rader:
+    // 1+ = något uppdaterades
+    // 0  = inget ändrades (t.ex. fel id eller samma värde)
+    return $affectedRows;
+}
+
+function delete_user($id)
+{
+    $connection = connect();
+
+    $sql = "DELETE FROM users WHERE id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "i", $id);
+    mysqli_stmt_execute($stmt);
+
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    // Returnerar antal påverkade rader:
+    // 1+ = något uppdaterades
+    // 0  = inget ändrades (t.ex. fel id eller samma värde)
+    return $affectedRows;
+}
+
+function get_user($username)
+{
+    $connection = connect();
+
+    $sql = "SELECT * FROM users WHERE username = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "s", $username);
+    mysqli_stmt_execute($stmt);
+
+    // Hämtar EN rad som en associativ array:
+    // $row['username'], $row['password'], etc.
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result); 
+
+    mysqli_stmt_close($stmt);
+
+    return $row; // Returnerar en associativ array (eller null)
+}
+
+function get_users()
+{
+    $connection = connect();
+
+    // ORDER BY created_at sorterar användarna i den ordning de skapades
+    // Kräver att tabellen har en kolumn som heter created_at
+    $sql = "SELECT * FROM users ORDER BY created_at";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_execute($stmt);
+
+    $rows = get_result($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    return $rows;
+}
+
+function get_result($stmt)
+{
+    $rows = array();
+
+    // Hämtar resultatobjektet från prepared statement
+    $result = mysqli_stmt_get_result($stmt);
+
+    if ($result) {
+        // Loopa igenom alla rader
+        // Varje rad läggs in i arrayen $rows
+        while ($row = mysqli_fetch_assoc($result)) {
+            $rows[] = $row;
+        }
+    }
+
+    // Returnerar en array med alla rader
+    // Om inga rader finns returneras en tom array []
+    return $rows;
+}
+
+// function get_posts_by_user($user_id){
+//     $connection = connect();
+
+//     $sql = "SELECT id, title, content, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC";
+//     $stmt = mysqli_prepare($connection, $sql);
+
+//      if (!$stmt) {
+//         die("Prepare failed: " . mysqli_error($connection));
+//     }
+
+//     mysqli_stmt_bind_param($stmt, "i", $user_id);
+//     mysqli_stmt_execute($stmt);
+
+//     $userPosts = get_result($stmt);
+
+//     mysqli_stmt_close($stmt);
+
+//     return $userPosts;
+// }
+
+function get_posts_by_user($user_id) {
+    $connection = connect();
+
+    $sql = "
+        SELECT 
+            p.id,
+            p.title,
+            p.content,
+            p.created_at,
+            i.filename,
+            i.description
+        FROM posts p
+        LEFT JOIN images i ON i.post_id = p.id
+        WHERE p.user_id = ?
+        ORDER BY p.created_at DESC
+    ";
+
+    $stmt = mysqli_prepare($connection, $sql);
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+
+    $userPosts = get_result($stmt);
+    mysqli_stmt_close($stmt);
+
+    return $userPosts;
+}

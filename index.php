@@ -3,8 +3,8 @@ $title = 'Home';
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ .'/admin/session.php';
 require_once __DIR__ . '/admin/db.php';
-$username = $_SESSION['username'] ?? null;
 
+$username = $_SESSION['username'] ?? null;
 
 echo 'Session ID: ' . session_id();
 echo '<pre>';
@@ -26,11 +26,19 @@ echo '</pre>';
       <a href="#latest" class=" text-muted-foreground hover:text-foreground transition-colors">Latest</a>
       <a href="#writers" class=" text-muted-foreground hover:text-foreground transition-colors">Writers</a>
     </nav>
+    <?php if(is_logged_in()): ?>
+    <button
+      onclick=" window.location.href = '/project-blog/pages/blog.php?user=<?= urlencode($username) ?>';"
+      class="justify-self-end text-sm px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
+      My blog
+    </button>
+    <?php else: ?>
     <button
       onclick=" window.location.href = '/project-blog/pages/login.php';"
       class="justify-self-end text-sm px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
       Sign in
     </button>
+    <?php endif; ?>
   </div>
 </header>
 

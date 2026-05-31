@@ -23,6 +23,8 @@
         --color-accent-foreground: var(--accent-foreground);
         --color-border: var(--border);
         --color-ring: var(--ring);
+        --color-destructive: var(--destructive);
+        --color-destructive-foreground: var(--destructive-foreground);
       }
     </style>
 </head>

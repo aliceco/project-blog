@@ -26,7 +26,7 @@ $localPath = __DIR__ . '/db_credentials.php';
 
 // Sökväg till db_credentials.php på webbservern
 // VIKTIGT: Byt USER mot ditt användarnamn
-$serverPath = '/var/private/USER/db_credentials.php'; 
+$serverPath = '/var/private/USER/db_credentials.php';
 
 // Om skriptet körs på webbservern används $serverPath
 // Annars används $localPath för att läsa in dina lokala databasuppgifter
@@ -51,7 +51,7 @@ function connect()
     // Skapa ny anslutning till databasen 
     $connection = mysqli_connect(DB_SERVER, DB_USER, DB_PASS, DB_NAME);
 
-     // Om anslutningen misslyckas avbryts programmet
+    // Om anslutningen misslyckas avbryts programmet
     if (!$connection) {
         die("Connection failed: " . mysqli_connect_error());
     }
@@ -120,6 +120,30 @@ function change_username($id, $newUsername)
     return $affectedRows;
 }
 
+function change_user_infor($id, $newUsername, $newEmail, $newPassword, $newTitle, $newPresentation, $newProfilePicture)
+{
+    $connection = connect();
+
+    $sql = "UPDATE users SET username = ?, email = ?, password = ?, title = ?, presentation = ?, profile_image = ? WHERE id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "ssi", $newUsername, $newEmail, $id);
+    mysqli_stmt_execute($stmt);
+
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    // Returnerar antal påverkade rader:
+    // 1+ = något uppdaterades
+    // 0  = inget ändrades (t.ex. fel id eller samma värde)
+    return $affectedRows;
+}
+
 function delete_user($id)
 {
     $connection = connect();
@@ -161,7 +185,7 @@ function get_user($username)
     // Hämtar EN rad som en associativ array:
     // $row['username'], $row['password'], etc.
     $result = mysqli_stmt_get_result($stmt);
-    $row = mysqli_fetch_assoc($result); 
+    $row = mysqli_fetch_assoc($result);
 
     mysqli_stmt_close($stmt);
 
@@ -210,29 +234,11 @@ function get_result($stmt)
     return $rows;
 }
 
-// function get_posts_by_user($user_id){
-//     $connection = connect();
-
-//     $sql = "SELECT id, title, content, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC";
-//     $stmt = mysqli_prepare($connection, $sql);
-
-//      if (!$stmt) {
-//         die("Prepare failed: " . mysqli_error($connection));
-//     }
-
-//     mysqli_stmt_bind_param($stmt, "i", $user_id);
-//     mysqli_stmt_execute($stmt);
-
-//     $userPosts = get_result($stmt);
-
-//     mysqli_stmt_close($stmt);
-
-//     return $userPosts;
-// }
-
-function get_posts_by_user($user_id) {
+function get_posts_by_user($user_id)
+{
     $connection = connect();
 
+    // Hämtar inlägg från specifik användare (user_id) och inkluderar bilder från images table om det finns 
     $sql = "
         SELECT 
             p.id,

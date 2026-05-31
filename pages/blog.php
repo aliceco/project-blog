@@ -1,10 +1,10 @@
 <?php
 $title = 'Home';
-require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/utils.php';
 
+$csrfToken = create_csrf_token();
 
 $username = trim($_GET['user'] ?? '');
 $user = get_user($username);
@@ -13,6 +13,8 @@ if (!$user) {
     header('Location: /project-blog/index.php');
     exit('User not found');
 }
+
+$can_edit = is_logged_in() && (int) ($_SESSION['user_id'] ?? 0) === (int) $user['id'];
 
 $posts = get_posts_by_user((int) $user['id']);
 
@@ -35,16 +37,19 @@ if ($selectedPost === null && !empty($posts)) {
     $selectedPostId = (int) ($selectedPost['id'] ?? 0);
 }
 
+// Variables for for user data
 $usernameSafe = htmlspecialchars($user['username'] ?? '');
 $titleSafe = htmlspecialchars($user['title'] ?? '');
 $presentationSafe = htmlspecialchars($user['presentation'] ?? '');
 $profileImageSafe = htmlspecialchars($user['profile_image'] ?? 'https://via.placeholder.com/96');
 
+// Variables for for post data
 $selectedTitle = htmlspecialchars($selectedPost['title'] ?? '');
 $selectedCreatedAt = $selectedPost['created_at'] ?? '';
 $selectedFilename = htmlspecialchars($selectedPost['filename'] ?? '');
 $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
 
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <header class="border-b border-border">
@@ -58,14 +63,22 @@ $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
                 The Square
             </span>
         </button>
+
     </div>
 </header>
 
 <main class="max-w-6xl mx-auto px-6 py-8">
+    <div class="flex justify-end">
+        <?php if ($can_edit): ?>
+            <button
+                class="text-foreground bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer py-1 px-2">
+                Log out
+            </button>
+        <?php endif; ?>
+    </div>
     <section class="mt-10 border-b border-border pb-10">
         <div class="flex items-center space-x-4 mb-6">
             <img src="<?php echo $profileImageSafe; ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
-
             <div>
                 <h1 class="text-3xl text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
                     <?php echo $usernameSafe; ?>
@@ -81,15 +94,93 @@ $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
                         <?php echo $presentationSafe; ?>
                     </p>
                 <?php endif; ?>
+                <?php if ($can_edit): ?>
+                    <button id="openEditProfileModal" type="button"
+                        class="text-xs mt-4 px-3 py-2 bg-secondary text-secondary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
+                        Edit profile
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
     </section>
 
+    <?php if ($can_edit): ?>
+        <!-- EDIT PROFILE MODAL -->
+        <div id="editProfileModal" class="fixed inset-0 z-50 hidden">
+            <div id="editProfileBackdrop" class="absolute inset-0 bg-foreground/30"></div>
+
+            <div class="relative min-h-full flex items-start justify-center overflow-y-auto py-10 px-4">
+                <div class="w-full max-w-2xl bg-card border border-border rounded-sm shadow-xl">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+                        <h2 class="text-lg text-foreground"
+                            style="font-family: 'Playfair Display', serif; font-weight: 600;">
+                            Edit profile
+                        </h2>
+                        <button id="closeEditProfileModal" type="button"
+                            class="text-muted-foreground hover:text-foreground transition-colors">
+                            x
+                        </button>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
+                        <input type="hidden" name="action" value="edit_profile">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+
+                        <div>
+                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
+                                style="font-family: 'DM Sans', sans-serif;">Username</label>
+                            <input type="text" name="username" value="<?php echo $usernameSafe; ?>"
+                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
+                                style="font-family: 'DM Sans', sans-serif;">Title</label>
+                            <input type="text" name="title" value="<?php echo $titleSafe; ?>"
+                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
+                                style="font-family: 'DM Sans', sans-serif;">Presentation</label>
+                            <textarea name="presentation" rows="5"
+                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all resize-y"
+                                style="line-height: 1.7"><?php echo $presentationSafe; ?></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
+                                style="font-family: 'DM Sans', sans-serif;">Profile image</label>
+                            <input type="file" name="profile_image"
+                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
+                            <button id="cancelEditProfileModal" type="button"
+                                class="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                style="font-family: 'DM Sans', sans-serif;">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                class="px-5 py-2 text-sm bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-opacity"
+                                style="font-family: 'DM Sans', sans-serif;">
+                                Save changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <section class="grid grid-cols-1 grid-cols-[280px_1fr] gap-10 pb-16 mt-10">
         <!-- All posts -->
         <aside>
-            <h2 class="text-lg text-foreground mb-4" style="font-family: 'Playfair Display', serif; font-weight: 600;">
-                All posts</h2>
+            <div class="flex flex-row items-baseline justify-between mb-2">
+                <h2 class="text-lg text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
+                    All posts</h2>
+                <button class="text-sm text-accent hover:opacity-80 cursor-pointer">+ New</button>
+            </div>
             <?php foreach ($posts as $post): ?>
                 <?php
                 $postId = (int) ($post['id'] ?? 0);
@@ -114,9 +205,17 @@ $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
             <?php endforeach; ?>
         </aside>
 
-        <section>
+        <section class="border-b border-border pb-10">
+            <?php if ($can_edit): ?>
+                <div class="flex justify-end">
+                    <button
+                        class="text-sm mb-4 px-3 py-2 bg-accent text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
+                        Create new post
+                    </button>
+                </div>
+            <?php endif; ?>
             <?php if ($selectedPost): ?>
-                <article class="border-b border-border pb-10">
+                <article>
                     <?php if (!empty($selectedTitle)): ?>
                         <h1 class="text-4xl text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
                             <?php echo $selectedTitle; ?>
@@ -140,10 +239,51 @@ $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
             <?php else: ?>
                 <p class="text-muted-foreground">No posts yet.</p>
             <?php endif; ?>
+            <?php if ($can_edit): ?>
+                <div class="flex justify-end mt-4 gap-2">
+                    <button
+                        class="text-xs px-2 py-1 border border-primary text-secondary-foreground rounded-md hover:bg-primary/10 transition-colors cursor-pointer">
+                        Edit post
+                    </button>
+                    <button
+                        class="text-xs px-2 py-1 border border-destructive text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer">
+                        Delete
+                    </button>
+                </div>
+            <?php endif; ?>
         </section>
     </section>
 
 </main>
+
+<?php if ($can_edit): ?>
+    <script>
+        const editProfileModal = document.getElementById('editProfileModal');
+        const openEditProfileModal = document.getElementById('openEditProfileModal');
+        const closeEditProfileModal = document.getElementById('closeEditProfileModal');
+        const cancelEditProfileModal = document.getElementById('cancelEditProfileModal');
+        const editProfileBackdrop = document.getElementById('editProfileBackdrop');
+
+        function openModal() {
+            editProfileModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeModal() {
+            editProfileModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        openEditProfileModal.addEventListener('click', openModal);
+        closeEditProfileModal.addEventListener('click', closeModal);
+        cancelEditProfileModal.addEventListener('click', closeModal);
+        editProfileBackdrop.addEventListener('click', closeModal);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+<?php endif; ?>
 
 </body>
 

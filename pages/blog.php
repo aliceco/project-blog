@@ -49,33 +49,11 @@ $selectedCreatedAt = $selectedPost['created_at'] ?? '';
 $selectedFilename = htmlspecialchars($selectedPost['filename'] ?? '');
 $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
 
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/document-head.php';
+require_once __DIR__ . '/../components/navbar.php';
 ?>
 
-<header class="border-b border-border">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <button type="button" onclick=" window.location.href = '/project-blog/index.php';"
-            class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-            Back
-        </button>
-        <button class="flex items-center gap-2">
-            <span style="font-family: 'Playfair Display', serif; font-weight: 700;" class="text-lg text-foreground">
-                The Square
-            </span>
-        </button>
-
-    </div>
-</header>
-
 <main class="max-w-6xl mx-auto px-6 py-8">
-    <div class="flex justify-end">
-        <?php if ($can_edit): ?>
-            <button
-                class="text-foreground bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer py-1 px-2">
-                Log out
-            </button>
-        <?php endif; ?>
-    </div>
     <section class="mt-10 border-b border-border pb-10">
         <div class="flex items-center space-x-4 mb-6">
             <img src="<?php echo $profileImageSafe; ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
@@ -104,74 +82,12 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </section>
 
-    <?php if ($can_edit): ?>
-        <!-- EDIT PROFILE MODAL -->
-        <div id="editProfileModal" class="fixed inset-0 z-50 hidden">
-            <div id="editProfileBackdrop" class="absolute inset-0 bg-foreground/30"></div>
+    <?php if ($can_edit) {
+        require_once __DIR__ . '/../components/edit-profile.php';
+    }
+    ?>
 
-            <div class="relative min-h-full flex items-start justify-center overflow-y-auto py-10 px-4">
-                <div class="w-full max-w-2xl bg-card border border-border rounded-sm shadow-xl">
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-border">
-                        <h2 class="text-lg text-foreground"
-                            style="font-family: 'Playfair Display', serif; font-weight: 600;">
-                            Edit profile
-                        </h2>
-                        <button id="closeEditProfileModal" type="button"
-                            class="text-muted-foreground hover:text-foreground transition-colors">
-                            x
-                        </button>
-                    </div>
 
-                    <form method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
-                        <input type="hidden" name="action" value="edit_profile">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-
-                        <div>
-                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
-                                style="font-family: 'DM Sans', sans-serif;">Username</label>
-                            <input type="text" name="username" value="<?php echo $usernameSafe; ?>"
-                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
-                                style="font-family: 'DM Sans', sans-serif;">Title</label>
-                            <input type="text" name="title" value="<?php echo $titleSafe; ?>"
-                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
-                                style="font-family: 'DM Sans', sans-serif;">Presentation</label>
-                            <textarea name="presentation" rows="5"
-                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all resize-y"
-                                style="line-height: 1.7"><?php echo $presentationSafe; ?></textarea>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
-                                style="font-family: 'DM Sans', sans-serif;">Profile image</label>
-                            <input type="file" name="profile_image"
-                                class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-                        </div>
-
-                        <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
-                            <button id="cancelEditProfileModal" type="button"
-                                class="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                                style="font-family: 'DM Sans', sans-serif;">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                class="px-5 py-2 text-sm bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-opacity"
-                                style="font-family: 'DM Sans', sans-serif;">
-                                Save changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
 
     <section class="grid grid-cols-1 grid-cols-[280px_1fr] gap-10 pb-16 mt-10">
         <!-- All posts -->

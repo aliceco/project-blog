@@ -101,20 +101,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/document-head.php';
 ?>
 
-<header class="border-b border-border">
-  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-    <button type="button" onclick=" window.location.href = '/project-blog/index.php';"
-      class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-      Back
-    </button>
-    <button class="flex items-center gap-2">
-      <span style="font-family: 'Playfair Display', serif; font-weight: 700;" class="text-lg text-foreground">
-        Commonplace
-      </span>
-    </button>
+<header class="border-b border-border max-w-6xl mx-auto px-6 py-4 flex justify-between items-center ">
+  
+    <h1 class="text-2xl text-foreground">
+      <a href="/project-blog/index.php" class="hover:text-accent transition-colors">
+        The Square
+      </a>
+    </h1>
+  
   </div>
 </header>
 
@@ -129,12 +126,13 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
   <div class="mt-8  ">
     <div class="mx-auto flex justify-center">
-      <button id="tab-login" class="px-3 py-2 w-32 rounded-l-md bg-primary text-primary-foreground">Login</button>
-      <button id="tab-register"
-        class="px-3 py-2 w-32 rounded-md bg-secondary text-secondary-foreground ">Register</button>
+      <button id="tabLogin"
+        class="px-3 py-2 w-32 rounded-l-md bg-primary text-primary-foreground cursor-pointer">Login</button>
+      <button id="tabRegister"
+        class="px-3 py-2 w-32 rounded-md bg-secondary text-secondary-foreground cursor-pointer">Register</button>
     </div>
     <div>
-      <form id="panel-login" class="mt-8 flex flex-col gap-2" method="POST">
+      <form id="panelLogin" class="mt-8 flex flex-col gap-2" method="POST">
         <input type="hidden" name="action" value="login">
         <!-- Hidden field to indicate which form is being sent -->
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -164,7 +162,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       </form>
 
-      <form id="panel-register" class="mt-8 flex flex-col gap-2 hidden" method="POST">
+      <form id="panelRegister" class="mt-8 flex flex-col gap-2 hidden" method="POST">
         <input type="hidden" name="action" value="register">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>"> <!-- send csrf token-->
 
@@ -218,12 +216,12 @@ require_once __DIR__ . '/../includes/header.php';
 </main>
 
 <script>
-  const loginTab = document.getElementById('tab-login');
-  const registerTab = document.getElementById('tab-register');
-  const loginMessage = document.getElementById('login-message');
-  const registerMessage = document.getElementById('register-message');
-  const loginPanel = document.getElementById('panel-login');
-  const registerPanel = document.getElementById('panel-register');
+  const loginTab = document.getElementById('tabLogin');
+  const registerTab = document.getElementById('tabRegister');
+  const loginMessage = document.getElementById('loginMessage');
+  const registerMessage = document.getElementById('registerMessage');
+  const loginPanel = document.getElementById('panelLogin');
+  const registerPanel = document.getElementById('panelRegister');
 
   function show(which) {
     const isLogin = which === 'login';

@@ -11,4 +11,9 @@ function readable_date($createdAt)
     return $date;
 }
 
+function hash_password($password){
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    return $hash;
+}
+
 ?>

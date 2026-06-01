@@ -4,7 +4,80 @@ require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/utils.php';
 
+$errors = array();
+$success = '';
+
 $csrfToken = create_csrf_token();
+
+$username = trim($_GET['user'] ?? '');
+$user = get_user($username);
+
+if (!$user) {
+    header('Location: /project-blog/index.php');
+    exit('User not found');
+}
+
+$can_edit = is_logged_in() && (int) ($_SESSION['user_id'] ?? 0) === (int) $user['id'];
+
+// Edit profile form handlning
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_profile')) {
+    if (
+        empty($_POST['csrf_token']) ||
+        empty($_SESSION['csrf_token']) ||
+        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+    ) {
+        $errors['csrf'] = 'Invalid CSRF token.';
+    } else {
+        $usernameInput = trim($_POST['username']);
+        $titleInput = trim($_POST['title']);
+        $presentationInput = trim($_POST['presentation']);
+
+        $currentUsername = (string) ($user['username']);
+        $currentTitle = (string) ($user['title']);
+        $currentPresentation = (string) ($user['presentation']);
+
+        $changedUsername = $usernameInput !== $currentUsername;
+        $changedTitle = $titleInput !== $currentTitle;
+        $changedPresentation = $presentationInput !== $currentPresentation;
+        $hasChanges = $changedUsername || $changedTitle || $changedPresentation;
+
+        if ($usernameInput === '') {
+            $errors['username'] = 'Username is required.';
+        } elseif ($changedUsername && username_exists($usernameInput)) {
+            $errors['username'] = 'Username already exists.';
+        } else {
+            $updatedRows = update_user_profile((int) $_SESSION['user_id'], $usernameInput, $titleInput, $presentationInput);
+
+            if ($updatedRows >= 0) {
+                $_SESSION['username'] = $usernameInput;
+                $redirect = '/project-blog/pages/blog.php?user=' . urlencode($usernameInput) . '&updated=1';
+                $currentPost = (int) ($_GET['post'] ?? 0);
+
+                if ($currentPost > 0) {
+                    $redirect .= '&post=' . $currentPost;
+                }
+                header('Location: ' . $redirect);
+                exit();
+            }
+
+            $errors['general'] = 'Could not save changes. Please try again.';
+        }
+    }
+}
+
+// // Create new post form
+// if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_profile')) {
+//     if (
+//         empty($_POST['csrf_token']) ||
+//         empty($_SESSION['csrf_token']) ||
+//         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+//     ) {
+//         $errors['csrf'] = 'Invalid CSRF token.';
+//     } else {
+
+//     }
+// }
+
 
 $username = trim($_GET['user'] ?? '');
 $user = get_user($username);
@@ -38,38 +111,40 @@ if ($selectedPost === null && !empty($posts)) {
 }
 
 // Variables for for user data
-$usernameSafe = htmlspecialchars($user['username'] ?? '');
-$titleSafe = htmlspecialchars($user['title'] ?? '');
-$presentationSafe = htmlspecialchars($user['presentation'] ?? '');
-$profileImageSafe = htmlspecialchars($user['profile_image'] ?? 'https://via.placeholder.com/96');
+$username = htmlspecialchars($user['username'] ?? '');
+$title = htmlspecialchars($user['title'] ?? '');
+$presentation = htmlspecialchars($user['presentation'] ?? '');
+$profileImage = htmlspecialchars($user['profile_image'] ?? '/project-blog/images/default-avatar.jpg');
 
 // Variables for for post data
 $selectedTitle = htmlspecialchars($selectedPost['title'] ?? '');
 $selectedCreatedAt = $selectedPost['created_at'] ?? '';
 $selectedFilename = htmlspecialchars($selectedPost['filename'] ?? '');
 $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
+$showEditModal = !empty($errors);
+$profileUpdated = (($_GET['updated'] ?? '') === '1');
 
-require_once __DIR__ . '/../includes/document-head.php';
+require_once __DIR__ . '/../includes/document_head.php';
 require_once __DIR__ . '/../components/navbar.php';
 ?>
 
 <main class="max-w-6xl mx-auto px-6 py-8">
     <section class="mt-10 border-b border-border pb-10">
         <div class="flex items-center space-x-4 mb-6">
-            <img src="<?php echo $profileImageSafe; ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
+            <img src="<?php echo $profileImage; ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
             <div>
                 <h1 class="text-3xl text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
-                    <?php echo $usernameSafe; ?>
+                    <?php echo $username; ?>
                 </h1>
 
-                <?php if (!empty($titleSafe)): ?>
+                <?php if (!empty($title)): ?>
                     <p class="text-sm text-muted-foreground" style="font-family: 'DM Sans', sans-serif;">
-                        <?php echo $titleSafe; ?>
+                        <?php echo $title; ?>
                     </p>
                 <?php endif; ?>
-                <?php if (!empty($presentationSafe)): ?>
+                <?php if (!empty($presentation)): ?>
                     <p class="text-base text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                        <?php echo $presentationSafe; ?>
+                        <?php echo $presentation; ?>
                     </p>
                 <?php endif; ?>
                 <?php if ($can_edit): ?>
@@ -83,11 +158,9 @@ require_once __DIR__ . '/../components/navbar.php';
     </section>
 
     <?php if ($can_edit) {
-        require_once __DIR__ . '/../components/edit-profile.php';
+        require_once __DIR__ . '/../components/edit_profile.php';
     }
     ?>
-
-
 
     <section class="grid grid-cols-1 grid-cols-[280px_1fr] gap-10 pb-16 mt-10">
         <!-- All posts -->
@@ -95,7 +168,7 @@ require_once __DIR__ . '/../components/navbar.php';
             <div class="flex flex-row items-baseline justify-between mb-2">
                 <h2 class="text-lg text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
                     All posts</h2>
-                <button class="text-sm text-accent hover:opacity-80 cursor-pointer">+ New</button>
+                <button class="text-sm text-accent hover:opacity-80 cursor-pointer" id="openCreatePostModal">+ New</button>
             </div>
             <?php foreach ($posts as $post): ?>
                 <?php
@@ -119,13 +192,19 @@ require_once __DIR__ . '/../components/navbar.php';
                 </a>
 
             <?php endforeach; ?>
+
         </aside>
+
+        <?php if ($can_edit) {
+            require_once __DIR__ . '/../components/create_post_modal.php';
+        }
+        ?>
 
         <section class="border-b border-border pb-10">
             <?php if ($can_edit): ?>
                 <div class="flex justify-end">
                     <button
-                        class="text-sm mb-4 px-3 py-2 bg-accent text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
+                        id="openCreatePostModalSecondary" class="text-sm mb-4 px-3 py-2 bg-accent text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
                         Create new post
                     </button>
                 </div>
@@ -180,24 +259,58 @@ require_once __DIR__ . '/../components/navbar.php';
         const cancelEditProfileModal = document.getElementById('cancelEditProfileModal');
         const editProfileBackdrop = document.getElementById('editProfileBackdrop');
 
-        function openModal() {
+        function openProfileModal() {
+            if (!editProfileModal) return;
             editProfileModal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
         }
 
-        function closeModal() {
+        function closeProfileModal() {
+            if (!editProfileModal) return;
             editProfileModal.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
         }
 
-        openEditProfileModal.addEventListener('click', openModal);
-        closeEditProfileModal.addEventListener('click', closeModal);
-        cancelEditProfileModal.addEventListener('click', closeModal);
-        editProfileBackdrop.addEventListener('click', closeModal);
+        if (openEditProfileModal) openEditProfileModal.addEventListener('click', openProfileModal);
+        if (closeEditProfileModal) closeEditProfileModal.addEventListener('click', closeProfileModal);
+        if (cancelEditProfileModal) cancelEditProfileModal.addEventListener('click', closeProfileModal);
+        if (editProfileBackdrop) editProfileBackdrop.addEventListener('click', closeProfileModal);
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape') closeProfileModal();
         });
+
+        <?php if ($showEditModal): ?>
+            openProfileModal();
+        <?php endif; ?>
+
+        const createPostModal = document.getElementById('createPostModal');
+        const openCreatePostModal = document.getElementById('openCreatePostModal');
+        const openCreatePostModalSecondary = document.getElementById('openCreatePostModalSecondary');
+        const closeCreatePostModal = document.getElementById('closeCreatePostModal');
+        const cancelCreatePostModal = document.getElementById('cancelCreatePostModal');
+        const createPostBackdrop = document.getElementById('createPostBackdrop');
+
+        function openPostModal() {
+            createPostModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closePostModal() {
+            createPostModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        if (openCreatePostModal) openCreatePostModal.addEventListener('click', openPostModal);
+        if (openCreatePostModalSecondary) openCreatePostModalSecondary.addEventListener('click', openPostModal);
+        if (closeCreatePostModal) closeCreatePostModal.addEventListener('click', closePostModal);
+        if (cancelCreatePostModal) cancelCreatePostModal.addEventListener('click', closePostModal);
+        if (createPostBackdrop) createPostBackdrop.addEventListener('click', closePostModal);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closePostModal();
+        });
+
     </script>
 <?php endif; ?>
 

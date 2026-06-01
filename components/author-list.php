@@ -18,7 +18,7 @@ $contributorCount = count($users);
       $title = htmlspecialchars($user['title'] ?? '');
       $presentation = htmlspecialchars($user['presentation'] ?? '');
       $profileImage = htmlspecialchars($user['profile_image'] ?? '');
-      $avatarUrl = $profileImage !== '' ? $profileImage : 'https://via.placeholder.com/96';
+      $avatarUrl = $profileImage !== '' ? $profileImage : '/project-blog/images/default-avatar.jpg';
       $url = '/project-blog/pages/blog.php?user=' . urlencode($user['username'] ?? '');
       ?>
 

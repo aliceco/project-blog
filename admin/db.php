@@ -120,18 +120,18 @@ function change_username($id, $newUsername)
     return $affectedRows;
 }
 
-function change_user_infor($id, $newUsername, $newEmail, $newPassword, $newTitle, $newPresentation, $newProfilePicture)
+function update_user_profile($id, $newUsername, $newTitle, $newPresentation)
 {
     $connection = connect();
 
-    $sql = "UPDATE users SET username = ?, email = ?, password = ?, title = ?, presentation = ?, profile_image = ? WHERE id = ?";
+    $sql = "UPDATE users SET username = ?, title = ?, presentation = ? WHERE id = ?";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "ssi", $newUsername, $newEmail, $id);
+    mysqli_stmt_bind_param($stmt, "sssi", $newUsername, $newTitle, $newPresentation, $id);
     mysqli_stmt_execute($stmt);
 
     $affectedRows = mysqli_stmt_affected_rows($stmt);
@@ -180,6 +180,30 @@ function get_user($username)
     }
 
     mysqli_stmt_bind_param($stmt, "s", $username);
+    mysqli_stmt_execute($stmt);
+
+    // Hämtar EN rad som en associativ array:
+    // $row['username'], $row['password'], etc.
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+
+    mysqli_stmt_close($stmt);
+
+    return $row; // Returnerar en associativ array (eller null)
+}
+
+function get_user_by_id($id)
+{
+    $connection = connect();
+
+    $sql = "SELECT * FROM users WHERE id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "i", $id);
     mysqli_stmt_execute($stmt);
 
     // Hämtar EN rad som en associativ array:
@@ -265,4 +289,26 @@ function get_posts_by_user($user_id)
     mysqli_stmt_close($stmt);
 
     return $userPosts;
+}
+
+function username_exists($username){
+    // Check if username already exists in database
+    $connection = connect();
+
+    $sql = "SELECT * FROM users WHERE username = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "s", $username);
+    mysqli_stmt_execute($stmt);
+
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+
+    mysqli_stmt_close($stmt);
+
+    return $row !== null;
 }

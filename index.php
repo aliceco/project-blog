@@ -11,7 +11,7 @@ print_r($_SESSION);
 echo '</pre>';
 
 
-require_once __DIR__ . '/includes/document-head.php';
+require_once __DIR__ . '/includes/document_head.php';
 require_once __DIR__ . '/components/navbar.php';
 
 ?>
@@ -37,7 +37,7 @@ require_once __DIR__ . '/components/navbar.php';
     </div>
 
     <div class="w-1/3">
-      <img src="https://via.placeholder.com/800x400" alt="Blog post image" class="w-full h-auto rounded-lg my-4">
+      <img src="/project-blog/images/default-avatar.jpg" alt="Blog post image" class="w-full h-auto rounded-lg my-4">
     </div>
   </section>
 
@@ -70,7 +70,7 @@ require_once __DIR__ . '/components/navbar.php';
 
     <div class="divide-y divide-border">
       <?php foreach ($posts as $post): ?>
-        <?php include __DIR__ . '/components/post-preview.php'; ?>
+        <?php include __DIR__ . '/components/post_preview.php'; ?>
       <?php endforeach; ?>
     </div>
   </section>

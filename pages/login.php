@@ -57,13 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errors['csrf'] = "Ogiltig CSRF-token.";
   } else {
 
-    $action = $_POST['action'] ?? 'login';
+    $action = $_POST['action']; // Check which form is being submitted
 
     if ($action === 'login') {
-      $username = trim($_POST['username'] ?? '');
-      $password = $_POST['password'] ?? '';
+      $username = trim($_POST['username']);
+      $password = $_POST['password'];
 
       $errors = validate_login_input($username, $password);
+
       if (empty($errors)) {
         $user = login_user($username, $password);
         if ($user) {
@@ -75,13 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['general'] = 'Invalid username or password.';
       }
 
-      $activeTab = 'login';
+      $activeTab = 'login'; // Set active tab to login if errors occur
     }
 
     if ($action === 'register') {
-      $username = trim($_POST['username'] ?? '');
-      $password = $_POST['password'] ?? '';
-      $email = trim($_POST['email'] ?? '');
+      $username = trim($_POST['username']);
+      $password = $_POST['password'];
+      $email = trim($_POST['email']);
       $gdpr = isset($_POST['gdpr']);
 
       $errors = validate_password_input($username, $password, $email, $gdpr);
@@ -96,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['general'] = 'User already exists.';
       }
 
-      $activeTab = 'register';
+      $activeTab = 'register'; // Set active tab to register if errors occur
     }
   }
 }
 
-require_once __DIR__ . '/../includes/document-head.php';
+require_once __DIR__ . '/../includes/document_head.php';
 ?>
 
 <header class="border-b border-border max-w-6xl mx-auto px-6 py-4 flex justify-between items-center ">

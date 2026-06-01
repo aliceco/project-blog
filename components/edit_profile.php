@@ -13,7 +13,7 @@
         </button>
       </div>
 
-      <form method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
+      <form method="POST" class="p-6 space-y-5">
         <input type="hidden" name="action" value="edit_profile">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 

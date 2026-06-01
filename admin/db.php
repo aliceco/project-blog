@@ -144,18 +144,18 @@ function update_user_profile($id, $newUsername, $newTitle, $newPresentation)
     return $affectedRows;
 }
 
-function delete_user($id)
+function delete_post($post_id, $user_id)
 {
     $connection = connect();
 
-    $sql = "DELETE FROM users WHERE id = ?";
+    $sql = "DELETE FROM posts WHERE id = ? AND user_id = ?";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "i", $id);
+    mysqli_stmt_bind_param($stmt, "ii", $post_id, $user_id);
     mysqli_stmt_execute($stmt);
 
     $affectedRows = mysqli_stmt_affected_rows($stmt);
@@ -310,5 +310,30 @@ function username_exists($username){
 
     mysqli_stmt_close($stmt);
 
-    return $row !== null;
+    return $row ;
+}
+
+function add_post($user_id, $title, $content){
+    // Add image upload
+    $connection = connect();
+
+    $sql = "INSERT INTO posts (user_id, title, content) VALUES (?, ?, ?)";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "iss", $user_id, $title, $content);
+    $success = mysqli_stmt_execute($stmt);
+
+    if (!$success) {
+        mysqli_stmt_close($stmt);
+        return false;
+    }
+
+    $newId = mysqli_insert_id($connection);
+    mysqli_stmt_close($stmt);
+
+    return $newId;
 }

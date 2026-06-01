@@ -4,8 +4,10 @@ require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/utils.php';
 
-$errors = array();
+$errors = [];
 $success = '';
+$showEditModal = false;
+$showCreatePostModal = false;
 
 $csrfToken = create_csrf_token();
 
@@ -46,9 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         } elseif ($changedUsername && username_exists($usernameInput)) {
             $errors['username'] = 'Username already exists.';
         } else {
-            $updatedRows = update_user_profile((int) $_SESSION['user_id'], $usernameInput, $titleInput, $presentationInput);
+            $updatedUsers = update_user_profile((int) $_SESSION['user_id'], $usernameInput, $titleInput, $presentationInput);
 
-            if ($updatedRows >= 0) {
+            // Redirect to updated profile page after successful update
+            if ($updatedUsers) {
                 $_SESSION['username'] = $usernameInput;
                 $redirect = '/project-blog/pages/blog.php?user=' . urlencode($usernameInput) . '&updated=1';
                 $currentPost = (int) ($_GET['post'] ?? 0);
@@ -63,20 +66,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             $errors['general'] = 'Could not save changes. Please try again.';
         }
     }
+
+    if (!empty($errors)) {
+        $showEditModal = true;
+    }
 }
 
-// // Create new post form
-// if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_profile')) {
-//     if (
-//         empty($_POST['csrf_token']) ||
-//         empty($_SESSION['csrf_token']) ||
-//         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
-//     ) {
-//         $errors['csrf'] = 'Invalid CSRF token.';
-//     } else {
+// Create new post form
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'create_post')) {
+    if (
+        empty($_POST['csrf_token']) ||
+        empty($_SESSION['csrf_token']) ||
+        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+    ) {
+        $errors['csrf'] = 'Invalid CSRF token.';
+    } else {
+        $postTitle = trim($_POST['title']);
+        $postContent = trim($_POST['content']);
 
-//     }
-// }
+        if ($postTitle === '') {
+            $errors['title'] = 'Title is required.';
+        } elseif ($postContent === '') {
+            $errors['content'] = 'Content is required.';
+        } else {
+            $createdPost = add_post((int) $_SESSION['user_id'], $postTitle, $postContent);
+
+            // Redirect to updated profile page with the new created post selected
+
+            if ($createdPost) {
+                $redirect = '/project-blog/pages/blog.php?user=' . urlencode((string) $user['username']) . '&post=' . (int) $createdPost;
+                header('Location: ' . $redirect);
+                exit();
+            }
+            $errors['general'] = 'Could not create post. Please try again.';
+        }
+    }
+
+    if (!empty($errors)) {
+        $showCreatePostModal = true;
+    }
+}
+
+if($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'deleted_post')) {
+    if (!$can_edit) {
+        $errors['general'] = 'You are not allowed to delete this post.';
+    } elseif (
+        empty($_POST['csrf_token']) ||
+        empty($_SESSION['csrf_token']) ||
+        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+    ) {
+        $errors['csrf'] = 'Invalid CSRF token.';
+    } else {
+        $postId = (int) ($_POST['post_id'] ?? 0);
+
+        if ($postId <= 0) {
+            $errors['general'] = 'Invalid post ID.';
+        } else {
+            $deleted = delete_post($postId, (int) $_SESSION['user_id']);
+
+            if ($deleted) {
+                $redirect = '/project-blog/pages/blog.php?user=' . urlencode((string) $user['username']) . '&updated=1';
+                header('Location: ' . $redirect);
+                exit();
+            }
+
+            $errors['general'] = 'Could not delete post. Please try again.';
+        }
+    }
+}
 
 
 $username = trim($_GET['user'] ?? '');
@@ -121,7 +178,6 @@ $selectedTitle = htmlspecialchars($selectedPost['title'] ?? '');
 $selectedCreatedAt = $selectedPost['created_at'] ?? '';
 $selectedFilename = htmlspecialchars($selectedPost['filename'] ?? '');
 $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
-$showEditModal = !empty($errors);
 $profileUpdated = (($_GET['updated'] ?? '') === '1');
 
 require_once __DIR__ . '/../includes/document_head.php';
@@ -168,7 +224,9 @@ require_once __DIR__ . '/../components/navbar.php';
             <div class="flex flex-row items-baseline justify-between mb-2">
                 <h2 class="text-lg text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
                     All posts</h2>
-                <button class="text-sm text-accent hover:opacity-80 cursor-pointer" id="openCreatePostModal">+ New</button>
+                <?php if($can_edit): ?>
+                    <button class="text-sm text-accent hover:opacity-80 cursor-pointer" id="openCreatePostModal">+ New</button>
+                <?php endif; ?>
             </div>
             <?php foreach ($posts as $post): ?>
                 <?php
@@ -240,10 +298,14 @@ require_once __DIR__ . '/../components/navbar.php';
                         class="text-xs px-2 py-1 border border-primary text-secondary-foreground rounded-md hover:bg-primary/10 transition-colors cursor-pointer">
                         Edit post
                     </button>
-                    <button
-                        class="text-xs px-2 py-1 border border-destructive text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer">
-                        Delete
-                    </button>
+                    <form method="POST">
+                        <input type="hidden" name="post_id" value="<?php echo (int) $selectedPostId; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                        <button type="submit" name="action" value="deleted_post"
+                            class="text-xs px-2 py-1 border border-destructive text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer">
+                            Delete
+                        </button>
+                    </form>
                 </div>
             <?php endif; ?>
         </section>
@@ -310,6 +372,10 @@ require_once __DIR__ . '/../components/navbar.php';
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closePostModal();
         });
+
+        <?php if ($showCreatePostModal): ?>
+            openPostModal();
+        <?php endif; ?>
 
     </script>
 <?php endif; ?>

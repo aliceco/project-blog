@@ -320,3 +320,33 @@ function addPost($user_id, $title, $content)
 
     return $newId;
 }
+
+
+function updatePost($id, $user_id, $newTitle, $newContent)
+{
+    $connection = connect();
+
+    $sql = "UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "ssii", $newTitle, $newContent, $id, $user_id);
+    $success = mysqli_stmt_execute($stmt);
+
+    if (!$success) {
+        mysqli_stmt_close($stmt);
+        return false;
+    }
+
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    // Returnerar antal påverkade rader:
+    // 1+ = något uppdaterades
+    // 0  = inget ändrades (t.ex. fel id eller samma värde)
+    return $affectedRows;
+}

@@ -13,7 +13,7 @@
         </button>
       </div>
 
-      <form method="POST" class="p-6 space-y-5">
+      <form method="POST" class="p-6 space-y-5" enctype="multipart/form-data">
         <input type="hidden" name="action" value="create_post">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
@@ -38,12 +38,16 @@
           <?php endif; ?>
         </div>
 
-        <!-- <div>
+        
+        <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
-            style="font-family: 'DM Sans', sans-serif;">Profile image</label>
-          <input type="file" name="profile_image"
+            style="font-family: 'DM Sans', sans-serif;">Image</label>
+          <input type="file" name="post-image" accept="image/*"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-        </div> -->
+          <?php if (!empty($errors['post-image'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['post-image']) ?></p>
+          <?php endif; ?>
+        </div>
 
         <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
           <button id="cancel-create-post" type="button"

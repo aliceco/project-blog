@@ -92,18 +92,18 @@ function addUser($firstname, $lastname, $username, $hashedPassword, $email, $tit
     return $newId; // Returnera id för posten
 }
 
-function updateUserProfile($id, $newFirstname, $newLastname, $newUsername, $newTitle, $newBio)
+function updateUserProfile($id, $newFirstname, $newLastname, $newUsername, $newTitle, $newBio, $newProfileImagePath)
 {
     $connection = connect();
 
-    $sql = "UPDATE users SET firstname = ?, lastname = ?, username = ?, title = ?, bio = ? WHERE id = ?";
+    $sql = "UPDATE users SET firstname = ?, lastname = ?, username = ?, title = ?, bio = ?, profile_image = ? WHERE id = ?";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "sssssi", $newFirstname, $newLastname, $newUsername, $newTitle, $newBio, $id);
+    mysqli_stmt_bind_param($stmt, "ssssssi", $newFirstname, $newLastname, $newUsername, $newTitle, $newBio, $newProfileImagePath, $id);
     $success = mysqli_stmt_execute($stmt);
 
     if (!$success) {
@@ -318,7 +318,7 @@ function addPost($user_id, $title, $content)
     $newId = mysqli_insert_id($connection);
     mysqli_stmt_close($stmt);
 
-    return $newId;
+    return $newId; // returns post_id
 }
 
 
@@ -341,7 +341,7 @@ function updatePost($id, $user_id, $newTitle, $newContent)
         return false;
     }
 
-    $affectedRows = mysqli_stmt_affected_rows($stmt);
+    $affectedRows = mysqli_stmt_affected_rows($stmt); 
 
     mysqli_stmt_close($stmt);
 
@@ -350,3 +350,25 @@ function updatePost($id, $user_id, $newTitle, $newContent)
     // 0  = inget ändrades (t.ex. fel id eller samma värde)
     return $affectedRows;
 }
+
+// function addPostImage($post_id, $filename){
+
+//     $connection = connect();
+//     $sql = "INSERT INTO images (post_id, filename) VALUES (?, ?)";
+//     $stmt = mysqli_prepare($connection, $sql);
+
+//     if (!$stmt) {
+//         die("Prepare failed: " . mysqli_error($connection));
+//     }
+
+//     mysqli_stmt_bind_param($stmt, "is", $post_id, $filename);
+//     $success = mysqli_stmt_execute($stmt);
+
+//     if (!$success) {
+//         mysqli_stmt_close($stmt);
+//         return false;
+//     }
+
+//     mysqli_stmt_close($stmt);
+//     return true;
+// }

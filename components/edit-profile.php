@@ -13,9 +13,11 @@
         </button>
       </div>
 
-      <form method="POST" class="p-6 space-y-5">
+      <form method="POST" class="p-6 space-y-5" enctype="multipart/form-data">
         <input type="hidden" name="action" value="edit_profile">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+        <input type="hidden" name="MAX_FILE_SIZE" value="307200"> <!-- 300 KB -->
+
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -62,12 +64,15 @@
             style="line-height: 1.7"><?= $bio ?></textarea>
         </div>
 
-        <!-- <div>
+        <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
             style="font-family: 'DM Sans', sans-serif;">Profile image</label>
-          <input type="file" name="profile_image"
+          <input type="file" name="profile_image" accept="image/*"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-        </div> -->
+          <?php if (!empty($errors['profile_image'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['profile_image']) ?></p>
+          <?php endif; ?>
+        </div>
 
         <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
           <?php if (!empty($errors['general'])): ?>

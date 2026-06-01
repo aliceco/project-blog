@@ -23,6 +23,9 @@ $sessionUser = getUserById($sessionUserId);
 
 $can_edit = isLoggedIn() && ($sessionUserId) === $author['id']; // Checks if sessionUser is owner of the profile
 
+$uploadDir = __DIR__ . '/../uploads/';
+
+
 // Edit profile form 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_profile')) {
     //Authorizatison in PHP
@@ -44,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             'username' => trim($_POST['username']),
             'title' => trim($_POST['title']),
             'bio' => trim($_POST['bio']),
+            'profile_image' => $_FILES['profile_image'] ?? null
         ];
 
         $sessionFirstname = ($sessionUser['firstname']);
@@ -51,15 +55,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         $sessionUsername = ($sessionUser['username']);
         $sessionTitle = ($sessionUser['title']);
         $sessionBio = ($sessionUser['bio']);
+        $sessionImagePath = $sessionUser['profile_image'] ?? null;
+        $profileImagePath = $sessionImagePath;
+
+        $uploadedFile = validateOptionalImageUpload($input['profile_image'], 307200);
+
+        $fileUploadSuccess = $uploadedFile['uploaded'];
 
         $changedFirstname = $input['firstname'] !== $sessionFirstname;
         $changedLastname = $input['lastname'] !== $sessionLastname;
         $changedUsername = $input['username'] !== $sessionUsername;
         $changedTitle = $input['title'] !== $sessionTitle;
         $changedBio = $input['bio'] !== $sessionBio;
-        $hasChanges = $changedFirstname || $changedLastname || $changedUsername || $changedTitle || $changedBio;
+        $hasChanges = $changedFirstname || $changedLastname || $changedUsername || $changedTitle || $changedBio || $fileUploadSuccess;
 
+        if (!$uploadedFile['ok']) {
+            $errors['profile_image'] = $uploadedFile['error'];
+        }
 
+        if ($fileUploadSuccess && empty($errors['profile_image'])) {
+            $newFilename = 'profile_' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
+            $profileImageDir = $uploadDir . 'profile_images/';
+            if (!is_dir($profileImageDir) && !mkdir($profileImageDir, 0755, true)) {
+                $errors['profile_image'] = 'Upload folder could not be created.';
+            } elseif (move_uploaded_file($input['profile_image']['tmp_name'], $profileImageDir . $newFilename)) {
+                $profileImagePath = '/project-blog/uploads/profile_images/' . $newFilename;
+
+            } else {
+                $errors['profile_image'] = 'Could not save uploaded file.';
+            }
+        }
 
         if ($input['firstname'] === '') {
             $errors['firstname'] = 'First name is required.';
@@ -69,11 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             $errors['username'] = 'Username is required.';
         } elseif ($changedUsername && usernameExists($input['username'])) {
             $errors['username'] = 'Username already exists.';
+        } elseif (!$hasChanges) {
+            $errors['general'] = 'No changes made.';
         } else {
-            $updatedUser = updateUserProfile($_SESSION['user_id'], $input['firstname'], $input['lastname'], $input['username'], $input['title'], $input['bio']);
+            $updatedUser = updateUserProfile($_SESSION['user_id'], $input['firstname'], $input['lastname'], $input['username'], $input['title'], $input['bio'], $profileImagePath);
 
             // Reload profile page after successful update
-            if ($updatedUser !== false) {
+            if ($updatedUser > 0) {
                 newCSRFToken();
                 $_SESSION['username'] = $input['username'];
                 $redirect = '/project-blog/pages/blog.php?author=' . urlencode($input['username']);
@@ -87,7 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
                 exit();
             }
 
-            $errors['general'] = 'Could not save changes. Please try again.';
+            $errors['general'] = $updatedUser === 0
+                ? 'No changes were saved.'
+                : 'Could not save changes. Please try again.';
         }
     }
 
@@ -96,46 +125,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
     }
 }
 
-// Create new post form
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_post')) {
-    // Authorizatison in PHP
-    if (!$can_edit) {
-        http_response_code(403);
-        exit('Forbidden');
-    }
+// // Create new post form
+// if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_post')) {
+//     // Authorizatison in PHP
+//     if (!$can_edit) {
+//         http_response_code(403);
+//         exit('Forbidden');
+//     }
 
-    if (
-        empty($_POST['csrf_token']) ||
-        empty($_SESSION['csrf_token']) ||
-        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
-    ) {
-        $errors['csrf'] = 'Invalid CSRF token.';
-    } else {
-        $postTitle = trim($_POST['title']);
-        $postContent = trim($_POST['content']);
+//     if (
+//         empty($_POST['csrf_token']) ||
+//         empty($_SESSION['csrf_token']) ||
+//         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+//     ) {
+//         $errors['csrf'] = 'Invalid CSRF token.';
+//     } else {
+//         $postTitle = trim($_POST['title']);
+//         $postContent = trim($_POST['content']);
+//         $postImage = $_FILES['post-image'] ?? null;
 
-        if ($postTitle === '') {
-            $errors['title'] = 'Title is required.';
-        } elseif ($postContent === '') {
-            $errors['content'] = 'Content is required.';
-        } else {
-            $createdPost = addPost($_SESSION['user_id'], $postTitle, $postContent);
+//         // First validate image
+//         $uploadedFile = validateOptionalImageUpload($postImage, 409600);
+//         // save whether uploaded or not
+//         $fileUploadSuccess = $uploadedFile['uploaded'];
+//         $postImagePath = null;
 
-            // Reload and redirect to updated profile page with the new created post selected
-            if ($createdPost) {
-                newCSRFToken();
-                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPost;
-                header('Location: ' . $redirect);
-                exit();
-            }
-            $errors['general'] = 'Could not create post. Please try again.';
-        }
-    }
+//         if (!$uploadedFile['ok']) {
+//             $errors['post-image'] = $uploadedFile['error'];
+//         }
 
-    if (!empty($errors)) {
-        $showCreatePostModal = true;
-    }
-}
+//         if ($fileUploadSuccess && empty($errors['post-image'])) {
+//             $newFilename = 'post' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
+//             $postImageDir = $uploadDir . 'post_images/';
+
+//            if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
+//                 $errors['post-image'] = 'Upload folder could not be created.';
+//             } elseif (move_uploaded_file($postImage['tmp_name'], $postImageDir . $newFilename)) {
+//                 $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
+
+//             } else {
+//                 $errors['post-image'] = 'Could not save uploaded file.';
+//             }
+//         }
+
+
+//         if ($postTitle === '') {
+//             $errors['title'] = 'Title is required.';
+//         } elseif ($postContent === '') {
+//             $errors['content'] = 'Content is required.';
+//         } else {
+//             $createdPostID = addPost($_SESSION['user_id'], $postTitle, $postContent);
+            
+//             // Reload and redirect to updated profile page with the new created post selected
+//             if ($createdPostID) {
+//                 // if (!empty($postImagePath)){
+//                 //     $postedImage = addPostImage($createdPostID, $postImagePath);
+//                 // }
+//                 newCSRFToken();
+//                 $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPostID;
+//                 header('Location: ' . $redirect);
+//                 exit();
+//             }
+//             $errors['general'] = 'Could not create post. Please try again.';
+//         }
+//     }
+
+//     if (!empty($errors)) {
+//         $showCreatePostModal = true;
+//     }
+// }
 
 
 // Edit post form

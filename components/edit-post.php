@@ -13,10 +13,12 @@
         </button>
       </div>
 
-      <form method="POST" class="p-6 space-y-5">
+      <form method="POST" class="p-6 space-y-5" enctype="multipart/form-data">
         <input type="hidden" name="action" value="edit_post">
         <input type="hidden" name="post_id" value="<?= htmlspecialchars($selectedPostId) ?>">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+        <input type="hidden" name="MAX_FILE_SIZE" value="512000"> <!-- 500 KB -->
+
         <?php if (!empty($errors['csrf']) || !empty($errors['general'])): ?>
           <div class="text-sm text-red-600">
             <?= htmlspecialchars($errors['csrf'] ?? $errors['general']) ?>
@@ -44,12 +46,12 @@
           <?php endif; ?>
         </div>
 
-        <!-- <div>
+        <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
             style="font-family: 'DM Sans', sans-serif;">Profile image</label>
-          <input type="file" name="profile_image"
+          <input type="file" name="profile_image" accept="image/*"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-        </div> -->
+        </div>
 
         <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
           <button id="cancel-edit-post" type="button"

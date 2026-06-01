@@ -265,20 +265,8 @@ function getPostsByUser($user_id)
 {
     $connection = connect();
 
-    // Hämtar inlägg från specifik användare (user_id) och inkluderar bilder från images table om det finns 
-    $sql = "
-        SELECT 
-            p.id,
-            p.title,
-            p.content,
-            p.created_at,
-            i.filename,
-            i.description
-        FROM posts p
-        LEFT JOIN images i ON i.post_id = p.id
-        WHERE p.user_id = ?
-        ORDER BY p.created_at DESC
-    ";
+    // Hämtar inlägg från specifik användare (user_id) 
+    $sql = "SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC";
 
     $stmt = mysqli_prepare($connection, $sql);
     if (!$stmt) {
@@ -295,19 +283,19 @@ function getPostsByUser($user_id)
 }
 
 
-function addPost($user_id, $title, $content)
+function addPost($user_id, $title, $content, $image_path)
 {
     // Add image upload
     $connection = connect();
 
-    $sql = "INSERT INTO posts (user_id, title, content) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO posts (user_id, title, content, image_path) VALUES (?, ?, ?, ?)";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "iss", $user_id, $title, $content);
+    mysqli_stmt_bind_param($stmt, "isss", $user_id, $title, $content, $image_path);
     $success = mysqli_stmt_execute($stmt);
 
     if (!$success) {
@@ -322,18 +310,19 @@ function addPost($user_id, $title, $content)
 }
 
 
-function updatePost($id, $user_id, $newTitle, $newContent)
+function updatePost($id, $user_id, $newTitle, $newContent, $newImagePath =null)
 {
     $connection = connect();
 
-    $sql = "UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?";
+    // If image_path is NULL -> keep old image_path
+    $sql = "UPDATE posts SET title = ?, content = ?, image_path = COALESCE(?, image_path) WHERE id = ? AND user_id = ?";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "ssii", $newTitle, $newContent, $id, $user_id);
+    mysqli_stmt_bind_param($stmt, "sssii", $newTitle, $newContent, $newImagePath , $id, $user_id);
     $success = mysqli_stmt_execute($stmt);
 
     if (!$success) {
@@ -351,24 +340,4 @@ function updatePost($id, $user_id, $newTitle, $newContent)
     return $affectedRows;
 }
 
-// function addPostImage($post_id, $filename){
 
-//     $connection = connect();
-//     $sql = "INSERT INTO images (post_id, filename) VALUES (?, ?)";
-//     $stmt = mysqli_prepare($connection, $sql);
-
-//     if (!$stmt) {
-//         die("Prepare failed: " . mysqli_error($connection));
-//     }
-
-//     mysqli_stmt_bind_param($stmt, "is", $post_id, $filename);
-//     $success = mysqli_stmt_execute($stmt);
-
-//     if (!$success) {
-//         mysqli_stmt_close($stmt);
-//         return false;
-//     }
-
-//     mysqli_stmt_close($stmt);
-//     return true;
-// }

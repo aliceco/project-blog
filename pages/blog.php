@@ -1,5 +1,5 @@
 <?php
-$title = 'Home';
+$head = 'Blog';
 require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/utils.php';
@@ -125,75 +125,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
     }
 }
 
-// // Create new post form
-// if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_post')) {
-//     // Authorizatison in PHP
-//     if (!$can_edit) {
-//         http_response_code(403);
-//         exit('Forbidden');
-//     }
+// Create new post form
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_post')) {
+    // Authorizatison in PHP
+    if (!$can_edit) {
+        http_response_code(403);
+        exit('Forbidden');
+    }
 
-//     if (
-//         empty($_POST['csrf_token']) ||
-//         empty($_SESSION['csrf_token']) ||
-//         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
-//     ) {
-//         $errors['csrf'] = 'Invalid CSRF token.';
-//     } else {
-//         $postTitle = trim($_POST['title']);
-//         $postContent = trim($_POST['content']);
-//         $postImage = $_FILES['post-image'] ?? null;
+    if (
+        empty($_POST['csrf_token']) ||
+        empty($_SESSION['csrf_token']) ||
+        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+    ) {
+        $errors['csrf'] = 'Invalid CSRF token.';
+    } else {
+        $postTitle = trim($_POST['title']);
+        $postContent = trim($_POST['content']);
+        $postImage = $_FILES['post-image'] ?? null;
 
-//         // First validate image
-//         $uploadedFile = validateOptionalImageUpload($postImage, 409600);
-//         // save whether uploaded or not
-//         $fileUploadSuccess = $uploadedFile['uploaded'];
-//         $postImagePath = null;
+        // First validate image
+        $uploadedFile = validateOptionalImageUpload($postImage, 409600);
+        // save whether uploaded or not
+        $fileUploadSuccess = $uploadedFile['uploaded'];
+        $postImagePath = null;
 
-//         if (!$uploadedFile['ok']) {
-//             $errors['post-image'] = $uploadedFile['error'];
-//         }
+        if (!$uploadedFile['ok']) {
+            $errors['post-image'] = $uploadedFile['error'];
+        }
 
-//         if ($fileUploadSuccess && empty($errors['post-image'])) {
-//             $newFilename = 'post' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
-//             $postImageDir = $uploadDir . 'post_images/';
+        if ($fileUploadSuccess && empty($errors['post-image'])) {
+            $newFilename = 'post' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
+            $postImageDir = $uploadDir . 'post_images/';
 
-//            if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
-//                 $errors['post-image'] = 'Upload folder could not be created.';
-//             } elseif (move_uploaded_file($postImage['tmp_name'], $postImageDir . $newFilename)) {
-//                 $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
+            if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
+                $errors['post-image'] = 'Upload folder could not be created.';
+            } elseif (move_uploaded_file($postImage['tmp_name'], $postImageDir . $newFilename)) {
+                $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
 
-//             } else {
-//                 $errors['post-image'] = 'Could not save uploaded file.';
-//             }
-//         }
+            } else {
+                $errors['post-image'] = 'Could not save uploaded file.';
+            }
+        }
 
 
-//         if ($postTitle === '') {
-//             $errors['title'] = 'Title is required.';
-//         } elseif ($postContent === '') {
-//             $errors['content'] = 'Content is required.';
-//         } else {
-//             $createdPostID = addPost($_SESSION['user_id'], $postTitle, $postContent);
-            
-//             // Reload and redirect to updated profile page with the new created post selected
-//             if ($createdPostID) {
-//                 // if (!empty($postImagePath)){
-//                 //     $postedImage = addPostImage($createdPostID, $postImagePath);
-//                 // }
-//                 newCSRFToken();
-//                 $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPostID;
-//                 header('Location: ' . $redirect);
-//                 exit();
-//             }
-//             $errors['general'] = 'Could not create post. Please try again.';
-//         }
-//     }
+        if ($postTitle === '') {
+            $errors['title'] = 'Title is required.';
+        } elseif ($postContent === '') {
+            $errors['content'] = 'Content is required.';
+        } else {
+            $createdPostID = addPost($_SESSION['user_id'], $postTitle, $postContent, $postImagePath);
 
-//     if (!empty($errors)) {
-//         $showCreatePostModal = true;
-//     }
-// }
+            // Reload and redirect to updated profile page with the new created post selected
+            if ($createdPostID) {
+                newCSRFToken();
+                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPostID;
+                header('Location: ' . $redirect);
+                exit();
+            }
+            $errors['general'] = 'Could not create post. Please try again.';
+        }
+    }
+
+    if (!empty($errors)) {
+        $showCreatePostModal = true;
+    }
+}
 
 
 // Edit post form
@@ -211,18 +208,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
     ) {
         $errors['csrf'] = 'Invalid CSRF token.';
     } else {
+        $postImagePath = NULL;
         $postId = ($_POST['post_id'] ?? 0);
         $titleInput = trim($_POST['title'] ?? '');
         $contentInput = trim($_POST['content'] ?? '');
+        $imageInput = $_FILES['post-image'] ?? null;
+        
+        $uploadedFile = validateOptionalImageUpload($imageInput, 409600);
 
-        if ($postId <= 0) {
-            $errors['general'] = 'Invalid post ID.';
-        } elseif ($titleInput === '') {
+        $fileUploadSuccess = $uploadedFile['uploaded'];
+
+        if (!$uploadedFile['ok']) {
+            $errors['post-image'] = $uploadedFile['error'];
+        }
+        if ($fileUploadSuccess && empty($errors['post-image'])) {
+            $newFilename = 'post' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
+            $postImageDir = $uploadDir . 'post_images/';
+
+            if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
+                $errors['post-image'] = 'Upload folder could not be created.';
+            } elseif (move_uploaded_file($imageInput['tmp_name'], $postImageDir . $newFilename)) {
+                $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
+
+            } else {
+                
+                $errors['post-image'] = 'Could not save uploaded file.';
+            }
+        }
+
+
+        if ($titleInput === '') {
             $errors['title'] = 'Title is required.';
         } elseif ($contentInput === '') {
             $errors['content'] = 'Content is required.';
         } else {
-            $updatedPost = updatePost($postId, $_SESSION['user_id'], $titleInput, $contentInput);
+            $updatedPost = updatePost($postId, $_SESSION['user_id'], $titleInput, $contentInput, $postImagePath);
 
             // Reload and redirect to updated profile page with the updated post selected
             if ($updatedPost > 0) {
@@ -313,6 +333,7 @@ $selectedTitle = htmlspecialchars($selectedPost['title'] ?? '');
 $selectedCreatedAt = $selectedPost['created_at'] ?? '';
 $selectedFilename = htmlspecialchars($selectedPost['filename'] ?? '');
 $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
+$selectedPostImagePath = $selectedPost['image_path'] ?? null;
 
 require_once __DIR__ . '/../includes/document-head.php';
 require_once __DIR__ . '/../components/navbar.php';
@@ -420,6 +441,10 @@ require_once __DIR__ . '/../components/navbar.php';
                     <?php if (!empty($selectedFilename)): ?>
                         <img src="/project-blog/uploads/<?= $selectedFilename ?>" alt="<?= $selectedTitle ?: 'Post image' ?>"
                             class="w-full h-auto rounded-lg my-4">
+                    <?php endif; ?>
+                    <?php if (!empty($selectedPostImagePath)): ?>
+                        <img src="<?= $selectedPostImagePath ?>" alt="<?= $selectedTitle ?: 'Post image' ?>"
+                            class="w-100 h-auto rounded-lg my-4">
                     <?php endif; ?>
                     <?php if (!empty($selectedContent)): ?>
                         <p class="text-base text-foreground leading-relaxed mt-6" style="font-family: 'DM Sans', sans-serif;">

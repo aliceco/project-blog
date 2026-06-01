@@ -3,32 +3,40 @@ $title = 'Login';
 require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/auth.php';
+require_once __DIR__ . '/../admin/utils.php';
 
-$csrfToken = create_csrf_token();
+$csrfToken = createCsrfToken();
 
-function validate_login_input($username, $password)
+
+
+function validateLoginInput($username, $password)
 {
   $errors = [];
 
-  if (trim($username) === '') {
-    $errors['username'] = 'Username is required';
-  }
-
-  if ($password === '') {
-    $errors['password'] = 'Password is required';
-  }
+  if (checkIfEmpty($username) || checkIfEmpty($password)) {
+    $errors['general'] = 'All fields are required.';
+    return $errors;
+  } 
 
   return $errors;
 }
 
-function validate_password_input($username, $password, $email, $gdpr)
+function validateRegistrationInput($firstname, $lastname, $username, $email,  $password, $gdpr)
 {
   $errors = [];
 
-  if (trim($username) === '') {
+  if (checkIfEmpty($username)) {
     $errors['username'] = 'Username is required';
   }
 
+  if (checkIfEmpty($firstname)) {
+    $errors['firstname'] = 'First name is required';
+  }
+
+  if (checkIfEmpty($lastname)) {
+    $errors['lastname'] = 'Last name is required';
+  }
+  
   if (strlen($password) < 6) {
     $errors['password'] = 'Password must be at least 6 characters long.';
   }
@@ -44,76 +52,87 @@ function validate_password_input($username, $password, $email, $gdpr)
   return $errors;
 }
 
-$errors = [];
-$activeTab = 'login';
+$errors = $_SESSION['form_errors'] ?? []; // Stores errors from forms
+$activeTab = $_SESSION['active_tab'] ?? 'login';
+
+unset($_SESSION['form_errors'], $_SESSION['active_tab']); // Resets the errors and active tab to not leave any error traces 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $action = $_POST['action'] ?? 'login'; // Check which form is being submitted
+  $activeTab = $action === 'register' ? 'register' : 'login';
 
   if (
     empty($_POST['csrf_token']) ||
     empty($_SESSION['csrf_token']) ||
     !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
   ) {
-    $errors['csrf'] = "Ogiltig CSRF-token.";
+    $errors['general'] = 'Invalid CSRF token. Please refresh and try again.';
   } else {
-
-    $action = $_POST['action']; // Check which form is being submitted
-
+    // Handles login
     if ($action === 'login') {
       $username = trim($_POST['username']);
       $password = $_POST['password'];
 
-      $errors = validate_login_input($username, $password);
+      $errors = validateLoginInput($username, $password);
 
       if (empty($errors)) {
-        $user = login_user($username, $password);
+        $user = loginUser($username, $password);
         if ($user) {
+          session_regenerate_id(true);
           $_SESSION['user_id'] = $user['id'];
           $_SESSION['username'] = $user['username'];
           header('Location: /project-blog/index.php');
+          newCSRFToken();
           exit();
         }
         $errors['general'] = 'Invalid username or password.';
       }
-
-      $activeTab = 'login'; // Set active tab to login if errors occur
     }
 
+    // handles registration
     if ($action === 'register') {
-      $username = trim($_POST['username']);
-      $password = $_POST['password'];
-      $email = trim($_POST['email']);
+      $firstname = trim($_POST['firstname'] ?? '');
+      $lastname = trim($_POST['lastname'] ?? '');
+      $username = trim($_POST['username'] ?? '');
+      $password = $_POST['password'] ?? '';
+      $email = trim($_POST['email'] ?? '');
       $gdpr = isset($_POST['gdpr']);
 
-      $errors = validate_password_input($username, $password, $email, $gdpr);
-      if (empty($errors)) {
-        $newUserId = register_user($username, $password, $email);
+      $errors = validateRegistrationInput($firstname, $lastname, $username, $email, $password, $gdpr);
+      
+      if (empty($errors)) { // If no errors, try to register user
+        $newUserId = registerUser($firstname, $lastname, $username, $password, $email);
         if ($newUserId !== false) {
+          // Redirect user to homepage if registrations was successful 
+          session_regenerate_id(true);
           $_SESSION['user_id'] = $newUserId;
           $_SESSION['username'] = $username;
           header('Location: /project-blog/index.php');
+          newCSRFToken();
           exit();
         }
         $errors['general'] = 'User already exists.';
       }
-
-      $activeTab = 'register'; // Set active tab to register if errors occur
     }
+  }
+
+  if (!empty($errors)) {
+    // Avoids resubmitting form when refreshing page & saves errors in session to show them to user
+    $_SESSION['form_errors'] = $errors;
+    $_SESSION['active_tab'] = $activeTab;
+    header('Location: /project-blog/pages/login.php');
+    exit();
   }
 }
 
-require_once __DIR__ . '/../includes/document_head.php';
-?>
+require_once __DIR__ . '/../includes/document-head.php';?>
 
 <header class="border-b border-border max-w-6xl mx-auto px-6 py-4 flex justify-between items-center ">
-  
     <h1 class="text-2xl text-foreground">
       <a href="/project-blog/index.php" class="hover:text-accent transition-colors">
         The Square
       </a>
     </h1>
-  
-  </div>
 </header>
 
 <main class="max-w-xl mx-auto px-6 py-8">
@@ -127,9 +146,9 @@ require_once __DIR__ . '/../includes/document_head.php';
   </div>
   <div class="mt-8  ">
     <div class="mx-auto flex justify-center">
-      <button id="tabLogin"
+      <button id="tab-login"
         class="px-3 py-2 w-32 rounded-l-md bg-primary text-primary-foreground cursor-pointer">Login</button>
-      <button id="tabRegister"
+      <button id="tab-register"
         class="px-3 py-2 w-32 rounded-md bg-secondary text-secondary-foreground cursor-pointer">Register</button>
     </div>
     <div>
@@ -142,14 +161,14 @@ require_once __DIR__ . '/../includes/document_head.php';
         <label for="login-username" class="text-sm font-medium text-foreground">Username</label>
         <input id="login-username" name="username" type="text" placeholder="Your Username"
           class="px-4 py-2 border border-border rounded-r-md focus:outline-none focus:ring-2 focus:ring-primary">
-        <?php if (!empty($errors['username'])): ?>
+        <?php if (!empty($errors['username']) && $activeTab === 'login'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['username']) ?></p>
         <?php endif; ?>
 
         <label for="login-password" class="text-sm font-medium text-foreground">Password</label>
         <input id="login-password" name="password" type="password" placeholder="••••••••"
           class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-        <?php if (!empty($errors['password'])): ?>
+        <?php if (!empty($errors['password']) && $activeTab === 'login'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['password']) ?></p>
         <?php endif; ?>
 
@@ -167,6 +186,19 @@ require_once __DIR__ . '/../includes/document_head.php';
         <input type="hidden" name="action" value="register">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>"> <!-- send csrf token-->
 
+        <label for="register-firstname" class="text-sm font-medium text-foreground">First Name</label>
+        <input id="register-firstname" name="firstname" type="text" placeholder="Jane"
+          class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+        <?php if (!empty($errors['firstname']) && $activeTab === 'register'): ?>
+          <p class="text-sm text-red-600"><?= htmlspecialchars($errors['firstname']) ?></p>
+        <?php endif; ?>
+
+        <label for="register-lastname" class="text-sm font-medium text-foreground">Last Name</label>
+        <input id="register-lastname" name="lastname" type="text" placeholder="Doe"
+          class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+        <?php if (!empty($errors['lastname']) && $activeTab === 'register'): ?>
+          <p class="text-sm text-red-600"><?= htmlspecialchars($errors['lastname']) ?></p>
+        <?php endif; ?>
 
         <label for="register-username" class="text-sm font-medium text-foreground">Username</label>
         <input id="register-username" name="username" type="text" placeholder="janedoe"
@@ -178,7 +210,7 @@ require_once __DIR__ . '/../includes/document_head.php';
         <label for="register-email" class="text-sm font-medium text-foreground">Email</label>
         <input id="register-email" name="email" type="email" placeholder="you@example.com"
           class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-        <?php if (!empty($errors['email'])): ?>
+        <?php if (!empty($errors['email']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['email']) ?></p>
         <?php endif; ?>
 
@@ -188,6 +220,7 @@ require_once __DIR__ . '/../includes/document_head.php';
         <?php if (!empty($errors['password']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['password']) ?></p>
         <?php endif; ?>
+
         <div class="text-sm text-muted-foreground align-items-center gap-2 flex">
           <input id="gdpr" name="gdpr" type="checkbox" required>
           <label for="gdpr" class="text-xs">
@@ -196,7 +229,8 @@ require_once __DIR__ . '/../includes/document_head.php';
             You can withdraw your consent at any time.
           </label>
         </div>
-        <?php if (!empty($errors['gdpr'])): ?>
+
+        <?php if (!empty($errors['gdpr']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['gdpr']) ?></p>
         <?php endif; ?>
         <?php if (!empty($errors['general']) && $activeTab === 'register'): ?>
@@ -205,9 +239,6 @@ require_once __DIR__ . '/../includes/document_head.php';
 
         <button type="submit"
           class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity">Register</button>
-        <?php if (!empty($errors['general'])): ?>
-          <p class="text-sm text-red-600"><?= htmlspecialchars($errors['general']) ?></p>
-        <?php endif; ?>
 
       </form>
     </div>
@@ -217,10 +248,10 @@ require_once __DIR__ . '/../includes/document_head.php';
 </main>
 
 <script>
-  const loginTab = document.getElementById('tabLogin');
-  const registerTab = document.getElementById('tabRegister');
-  const loginMessage = document.getElementById('loginMessage');
-  const registerMessage = document.getElementById('registerMessage');
+  const loginTab = document.getElementById('tab-login');
+  const registerTab = document.getElementById('tab-register');
+  const loginMessage = document.getElementById('login-message');
+  const registerMessage = document.getElementById('register-message');
   const loginPanel = document.getElementById('panelLogin');
   const registerPanel = document.getElementById('panelRegister');
 
@@ -240,7 +271,7 @@ require_once __DIR__ . '/../includes/document_head.php';
   loginTab.addEventListener('click', () => show('login'));
   registerTab.addEventListener('click', () => show('register'));
 
-  show('<?= $activeTab ?>');
+  show('<?= htmlspecialchars($activeTab) ?>');
 
 </script>
 

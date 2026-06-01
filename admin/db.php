@@ -21,12 +21,12 @@
 |
 */
 
-// Sökväg till din lokala db_credentials.php
-$localPath = __DIR__ . '/db_credentials.php';
+// Sökväg till din lokala db-credentials.php
+$localPath = __DIR__ . '/db-credentials.php';
 
-// Sökväg till db_credentials.php på webbservern
+// Sökväg till db-credentials.php på webbservern
 // VIKTIGT: Byt USER mot ditt användarnamn
-$serverPath = '/var/private/USER/db_credentials.php';
+$serverPath = '/var/private/USER/db-credentials.php';
 
 // Om skriptet körs på webbservern används $serverPath
 // Annars används $localPath för att läsa in dina lokala databasuppgifter
@@ -35,7 +35,7 @@ if (file_exists($serverPath)) {
 } elseif (file_exists($localPath)) {
     require_once($localPath);
 } else {
-    die("Kunde inte hitta db_credentials.php.");
+    die("Kunde inte hitta db-credentials.php.");
 }
 function connect()
 {
@@ -62,23 +62,19 @@ function connect()
     return $connection;
 }
 
-function add_user($username, $hashedPassword, $email)
+// User-functions
+function addUser($firstname, $lastname, $username, $hashedPassword, $email, $title = null, $bio = null)
 {
-    // OBS: $hashedPassword ska vara skapat med password_hash()
-    // Spara ALDRIG lösenord i klartext i databasen.
-
     $connection = connect();
 
-    // ? är platshållare (placeholders)
-    // Detta skyddar mot SQL injection
-    $sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO users (firstname, lastname, username, password, email, title, bio) VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "sss", $username, $hashedPassword, $email);
+    mysqli_stmt_bind_param($stmt, "sssssss", $firstname, $lastname, $username, $hashedPassword, $email, $title, $bio);
 
     $success = mysqli_stmt_execute($stmt);
 
@@ -96,19 +92,24 @@ function add_user($username, $hashedPassword, $email)
     return $newId; // Returnera id för posten
 }
 
-function change_username($id, $newUsername)
+function updateUserProfile($id, $newFirstname, $newLastname, $newUsername, $newTitle, $newBio)
 {
     $connection = connect();
 
-    $sql = "UPDATE users SET username = ? WHERE id = ?";
+    $sql = "UPDATE users SET firstname = ?, lastname = ?, username = ?, title = ?, bio = ? WHERE id = ?";
     $stmt = mysqli_prepare($connection, $sql);
 
     if (!$stmt) {
         die("Prepare failed: " . mysqli_error($connection));
     }
 
-    mysqli_stmt_bind_param($stmt, "si", $newUsername, $id);
-    mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param($stmt, "sssssi", $newFirstname, $newLastname, $newUsername, $newTitle, $newBio, $id);
+    $success = mysqli_stmt_execute($stmt);
+
+    if (!$success) {
+        mysqli_stmt_close($stmt);
+        return false;
+    }
 
     $affectedRows = mysqli_stmt_affected_rows($stmt);
 
@@ -120,55 +121,13 @@ function change_username($id, $newUsername)
     return $affectedRows;
 }
 
-function update_user_profile($id, $newUsername, $newTitle, $newPresentation)
+function usernameExists($username)
 {
-    $connection = connect();
-
-    $sql = "UPDATE users SET username = ?, title = ?, presentation = ? WHERE id = ?";
-    $stmt = mysqli_prepare($connection, $sql);
-
-    if (!$stmt) {
-        die("Prepare failed: " . mysqli_error($connection));
-    }
-
-    mysqli_stmt_bind_param($stmt, "sssi", $newUsername, $newTitle, $newPresentation, $id);
-    mysqli_stmt_execute($stmt);
-
-    $affectedRows = mysqli_stmt_affected_rows($stmt);
-
-    mysqli_stmt_close($stmt);
-
-    // Returnerar antal påverkade rader:
-    // 1+ = något uppdaterades
-    // 0  = inget ändrades (t.ex. fel id eller samma värde)
-    return $affectedRows;
+   return getUser($username) !== null;
 }
 
-function delete_post($post_id, $user_id)
-{
-    $connection = connect();
 
-    $sql = "DELETE FROM posts WHERE id = ? AND user_id = ?";
-    $stmt = mysqli_prepare($connection, $sql);
-
-    if (!$stmt) {
-        die("Prepare failed: " . mysqli_error($connection));
-    }
-
-    mysqli_stmt_bind_param($stmt, "ii", $post_id, $user_id);
-    mysqli_stmt_execute($stmt);
-
-    $affectedRows = mysqli_stmt_affected_rows($stmt);
-
-    mysqli_stmt_close($stmt);
-
-    // Returnerar antal påverkade rader:
-    // 1+ = något uppdaterades
-    // 0  = inget ändrades (t.ex. fel id eller samma värde)
-    return $affectedRows;
-}
-
-function get_user($username)
+function getUser($username)
 {
     $connection = connect();
 
@@ -192,7 +151,7 @@ function get_user($username)
     return $row; // Returnerar en associativ array (eller null)
 }
 
-function get_user_by_id($id)
+function getUserById($id)
 {
     $connection = connect();
 
@@ -216,7 +175,7 @@ function get_user_by_id($id)
     return $row; // Returnerar en associativ array (eller null)
 }
 
-function get_users()
+function getUsers()
 {
     $connection = connect();
 
@@ -231,14 +190,40 @@ function get_users()
 
     mysqli_stmt_execute($stmt);
 
-    $rows = get_result($stmt);
+    $rows = getResult($stmt);
 
     mysqli_stmt_close($stmt);
 
     return $rows;
 }
 
-function get_result($stmt)
+// Post-related functions
+
+function deletePost($post_id, $user_id)
+{
+    $connection = connect();
+
+    $sql = "DELETE FROM posts WHERE id = ? AND user_id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_bind_param($stmt, "ii", $post_id, $user_id);
+    mysqli_stmt_execute($stmt);
+
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    // Returnerar antal påverkade rader:
+    // 1+ = något uppdaterades
+    // 0  = inget ändrades (t.ex. fel id eller samma värde)
+    return $affectedRows;
+}
+
+function getResult($stmt)
 {
     $rows = array();
 
@@ -258,7 +243,25 @@ function get_result($stmt)
     return $rows;
 }
 
-function get_posts_by_user($user_id)
+function getPostsSorted(){
+    $connection = connect();
+
+    $sql = "SELECT * FROM posts ORDER BY created_at DESC LIMIT 6";  
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($connection));
+    }
+
+    mysqli_stmt_execute($stmt);
+
+    $posts = getResult($stmt);
+    mysqli_stmt_close($stmt);
+
+    return $posts;
+}
+
+function getPostsByUser($user_id)
 {
     $connection = connect();
 
@@ -285,35 +288,15 @@ function get_posts_by_user($user_id)
     mysqli_stmt_bind_param($stmt, "i", $user_id);
     mysqli_stmt_execute($stmt);
 
-    $userPosts = get_result($stmt);
+    $userPosts = getResult($stmt);
     mysqli_stmt_close($stmt);
 
     return $userPosts;
 }
 
-function username_exists($username){
-    // Check if username already exists in database
-    $connection = connect();
 
-    $sql = "SELECT * FROM users WHERE username = ?";
-    $stmt = mysqli_prepare($connection, $sql);
-
-    if (!$stmt) {
-        die("Prepare failed: " . mysqli_error($connection));
-    }
-
-    mysqli_stmt_bind_param($stmt, "s", $username);
-    mysqli_stmt_execute($stmt);
-
-    $result = mysqli_stmt_get_result($stmt);
-    $row = mysqli_fetch_assoc($result);
-
-    mysqli_stmt_close($stmt);
-
-    return $row ;
-}
-
-function add_post($user_id, $title, $content){
+function addPost($user_id, $title, $content)
+{
     // Add image upload
     $connection = connect();
 

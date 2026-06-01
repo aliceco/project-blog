@@ -1,5 +1,5 @@
-<div id="createPostModal" class="fixed inset-0 z-50 hidden">
-  <div id="createPostBackdrop" class="absolute inset-0 bg-foreground/30"></div>
+<div id="create-post" class="fixed inset-0 z-50 hidden">
+  <div id="create-post-backdrop" class="absolute inset-0 bg-foreground/30"></div>
 
   <div class="relative min-h-full flex items-start justify-center overflow-y-auto py-10 px-4">
     <div class="w-full max-w-2xl bg-card border border-border rounded-sm shadow-xl">
@@ -7,7 +7,7 @@
         <h2 class="text-lg text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
           Create new post
         </h2>
-        <button id="closeCreatePostModal" type="button"
+        <button id="close-create-post" type="button"
           class="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
           x
         </button>
@@ -15,7 +15,7 @@
 
       <form method="POST" class="p-6 space-y-5">
         <input type="hidden" name="action" value="create_post">
-        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
         <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
@@ -23,7 +23,7 @@
           <input type="text" name="title"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
           <?php if (!empty($errors['title'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?php echo htmlspecialchars($errors['title']); ?></p>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['title']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -34,7 +34,7 @@
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all resize-y"
             style="line-height: 1.7"></textarea>
           <?php if (!empty($errors['content'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?php echo htmlspecialchars($errors['content']); ?></p>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['content']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -46,7 +46,7 @@
         </div> -->
 
         <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
-          <button id="cancelCreatePostModal" type="button"
+          <button id="cancel-create-post" type="button"
             class="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
             Cancel

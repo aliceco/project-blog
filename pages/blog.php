@@ -4,25 +4,33 @@ require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/utils.php';
 
+$csrfToken = createCsrfToken();
+
 $errors = [];
-$success = '';
 $showEditModal = false;
 $showCreatePostModal = false;
 
-$csrfToken = create_csrf_token();
 
-$username = trim($_GET['user'] ?? '');
-$user = get_user($username);
-
-if (!$user) {
+$authorQuery = trim($_GET['author']);
+$author = getUser($authorQuery);
+if (!$author) { // check if auhtor page exists, if not redirect to home page
     header('Location: /project-blog/index.php');
     exit('User not found');
 }
 
-$can_edit = is_logged_in() && (int) ($_SESSION['user_id'] ?? 0) === (int) $user['id'];
+$sessionUserId = $_SESSION['user_id'];
+$sessionUser = getUserById($sessionUserId);
 
-// Edit profile form handlning
+$can_edit = isLoggedIn() && ($sessionUserId) === $author['id']; // Checks if sessionUser is owner of the profile
+
+// Edit profile form 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_profile')) {
+    //Authorizatison in PHP
+    if (!$can_edit) {
+        http_response_code(403);
+        exit('Forbidden');
+    }
+
     if (
         empty($_POST['csrf_token']) ||
         empty($_SESSION['csrf_token']) ||
@@ -30,36 +38,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
     ) {
         $errors['csrf'] = 'Invalid CSRF token.';
     } else {
-        $usernameInput = trim($_POST['username']);
-        $titleInput = trim($_POST['title']);
-        $presentationInput = trim($_POST['presentation']);
+        $input = [
+            'firstname' => trim($_POST['firstname']),
+            'lastname' => trim($_POST['lastname']),
+            'username' => trim($_POST['username']),
+            'title' => trim($_POST['title']),
+            'bio' => trim($_POST['bio']),
+        ];
 
-        $currentUsername = (string) ($user['username']);
-        $currentTitle = (string) ($user['title']);
-        $currentPresentation = (string) ($user['presentation']);
+        $sessionFirstname = ($sessionUser['firstname']);
+        $sessionLastname = ($sessionUser['lastname']);
+        $sessionUsername = ($sessionUser['username']);
+        $sessionTitle = ($sessionUser['title']);
+        $sessionBio = ($sessionUser['bio']);
 
-        $changedUsername = $usernameInput !== $currentUsername;
-        $changedTitle = $titleInput !== $currentTitle;
-        $changedPresentation = $presentationInput !== $currentPresentation;
-        $hasChanges = $changedUsername || $changedTitle || $changedPresentation;
+        $changedFirstname = $input['firstname'] !== $sessionFirstname;
+        $changedLastname = $input['lastname'] !== $sessionLastname;
+        $changedUsername = $input['username'] !== $sessionUsername;
+        $changedTitle = $input['title'] !== $sessionTitle;
+        $changedBio = $input['bio'] !== $sessionBio;
+        $hasChanges = $changedFirstname || $changedLastname || $changedUsername || $changedTitle || $changedBio;
 
-        if ($usernameInput === '') {
+
+
+        if ($input['firstname'] === '') {
+            $errors['firstname'] = 'First name is required.';
+        } elseif ($input['lastname'] === '') {
+            $errors['lastname'] = 'Last name is required.';
+        } elseif ($input['username'] === '') {
             $errors['username'] = 'Username is required.';
-        } elseif ($changedUsername && username_exists($usernameInput)) {
+        } elseif ($changedUsername && usernameExists($input['username'])) {
             $errors['username'] = 'Username already exists.';
         } else {
-            $updatedUsers = update_user_profile((int) $_SESSION['user_id'], $usernameInput, $titleInput, $presentationInput);
+            $updatedUser = updateUserProfile($_SESSION['user_id'], $input['firstname'], $input['lastname'], $input['username'], $input['title'], $input['bio']);
 
-            // Redirect to updated profile page after successful update
-            if ($updatedUsers) {
-                $_SESSION['username'] = $usernameInput;
-                $redirect = '/project-blog/pages/blog.php?user=' . urlencode($usernameInput) . '&updated=1';
-                $currentPost = (int) ($_GET['post'] ?? 0);
+            // Reload profile page after successful update
+            if ($updatedUser !== false) {
+                $_SESSION['username'] = $input['username'];
+                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($input['username']);
+                $sessionPost = $_GET['post'] ?? 0;
 
-                if ($currentPost > 0) {
-                    $redirect .= '&post=' . $currentPost;
+                if ($sessionPost > 0) {
+                    $redirect .= '&post=' . $sessionPost;
                 }
                 header('Location: ' . $redirect);
+                newCSRFToken();
+
                 exit();
             }
 
@@ -73,7 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
 }
 
 // Create new post form
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'create_post')) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_post')) {
+    // Authorizatison in PHP
+    if (!$can_edit) {
+        http_response_code(403);
+        exit('Forbidden');
+    }
+
     if (
         empty($_POST['csrf_token']) ||
         empty($_SESSION['csrf_token']) ||
@@ -89,13 +119,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'crea
         } elseif ($postContent === '') {
             $errors['content'] = 'Content is required.';
         } else {
-            $createdPost = add_post((int) $_SESSION['user_id'], $postTitle, $postContent);
+            $createdPost = addPost($_SESSION['user_id'], $postTitle, $postContent);
 
-            // Redirect to updated profile page with the new created post selected
-
+            // Reload and redirect to updated profile page with the new created post selected
             if ($createdPost) {
-                $redirect = '/project-blog/pages/blog.php?user=' . urlencode((string) $user['username']) . '&post=' . (int) $createdPost;
+                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPost;
                 header('Location: ' . $redirect);
+                newCSRFToken();
                 exit();
             }
             $errors['general'] = 'Could not create post. Please try again.';
@@ -107,26 +137,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'crea
     }
 }
 
-if($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'deleted_post')) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'deleted_post')) {
+    // Authorizatison in PHP
     if (!$can_edit) {
-        $errors['general'] = 'You are not allowed to delete this post.';
-    } elseif (
+        http_response_code(403);
+        exit('Forbidden');
+    }
+
+    if (
         empty($_POST['csrf_token']) ||
         empty($_SESSION['csrf_token']) ||
         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
     ) {
         $errors['csrf'] = 'Invalid CSRF token.';
     } else {
-        $postId = (int) ($_POST['post_id'] ?? 0);
+        $postId = $_POST['post_id'];
 
         if ($postId <= 0) {
             $errors['general'] = 'Invalid post ID.';
         } else {
-            $deleted = delete_post($postId, (int) $_SESSION['user_id']);
+            $deleted = deletePost($postId, $_SESSION['user_id']);
 
             if ($deleted) {
-                $redirect = '/project-blog/pages/blog.php?user=' . urlencode((string) $user['username']) . '&updated=1';
+                
+                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&updated=1';
                 header('Location: ' . $redirect);
+                newCSRFToken();
                 exit();
             }
 
@@ -135,26 +171,15 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'delet
     }
 }
 
+$posts = getPostsByUser($author['id']);
 
-$username = trim($_GET['user'] ?? '');
-$user = get_user($username);
-
-if (!$user) {
-    header('Location: /project-blog/index.php');
-    exit('User not found');
-}
-
-$can_edit = is_logged_in() && (int) ($_SESSION['user_id'] ?? 0) === (int) $user['id'];
-
-$posts = get_posts_by_user((int) $user['id']);
-
-$selectedPostId = (int) ($_GET['post'] ?? 0); // gets the selected post ID from query parameter
+$selectedPostId = $_GET['post'] ?? 0; // gets the selected post ID from query parameter
 $selectedPost = null;
 
 if ($selectedPostId > 0) {
     // Finds the post that the user clicked on
     foreach ($posts as $post) {
-        if ((int) ($post['id'] ?? 0) === $selectedPostId) {
+        if (($post['id'] ?? 0) == $selectedPostId) {
             $selectedPost = $post;
             break;
         }
@@ -164,47 +189,48 @@ if ($selectedPostId > 0) {
 // Sets the first post as selected if no postID is provided in query
 if ($selectedPost === null && !empty($posts)) {
     $selectedPost = $posts[0];
-    $selectedPostId = (int) ($selectedPost['id'] ?? 0);
+    $selectedPostId = $selectedPost['id'] ?? 0;
 }
 
 // Variables for for user data
-$username = htmlspecialchars($user['username'] ?? '');
-$title = htmlspecialchars($user['title'] ?? '');
-$presentation = htmlspecialchars($user['presentation'] ?? '');
-$profileImage = htmlspecialchars($user['profile_image'] ?? '/project-blog/images/default-avatar.jpg');
+$firstname = htmlspecialchars($author['firstname'] ?? '');
+$lastname = htmlspecialchars($author['lastname'] ?? '');
+$username = htmlspecialchars($author['username'] ?? '');
+$title = htmlspecialchars($author['title'] ?? '');
+$bio = htmlspecialchars($author['bio'] ?? '');
+$profileImage = htmlspecialchars($author['profile_image'] ?? '/project-blog/images/default-avatar.jpg');
 
 // Variables for for post data
 $selectedTitle = htmlspecialchars($selectedPost['title'] ?? '');
 $selectedCreatedAt = $selectedPost['created_at'] ?? '';
 $selectedFilename = htmlspecialchars($selectedPost['filename'] ?? '');
 $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
-$profileUpdated = (($_GET['updated'] ?? '') === '1');
 
-require_once __DIR__ . '/../includes/document_head.php';
+require_once __DIR__ . '/../includes/document-head.php';
 require_once __DIR__ . '/../components/navbar.php';
 ?>
 
 <main class="max-w-6xl mx-auto px-6 py-8">
     <section class="mt-10 border-b border-border pb-10">
         <div class="flex items-center space-x-4 mb-6">
-            <img src="<?php echo $profileImage; ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
+            <img src="<?= $profileImage ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
             <div>
                 <h1 class="text-3xl text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
-                    <?php echo $username; ?>
+                    <?= $username ?>
                 </h1>
 
                 <?php if (!empty($title)): ?>
                     <p class="text-sm text-muted-foreground" style="font-family: 'DM Sans', sans-serif;">
-                        <?php echo $title; ?>
+                        <?= $title ?>
                     </p>
                 <?php endif; ?>
-                <?php if (!empty($presentation)): ?>
+                <?php if (!empty($bio)): ?>
                     <p class="text-base text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                        <?php echo $presentation; ?>
+                        <?= $bio ?>
                     </p>
                 <?php endif; ?>
                 <?php if ($can_edit): ?>
-                    <button id="openEditProfileModal" type="button"
+                    <button id="open-edit-profile" type="button"
                         class="text-xs mt-4 px-3 py-2 bg-secondary text-secondary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
                         Edit profile
                     </button>
@@ -214,56 +240,59 @@ require_once __DIR__ . '/../components/navbar.php';
     </section>
 
     <?php if ($can_edit) {
-        require_once __DIR__ . '/../components/edit_profile.php';
+        require_once __DIR__ . '/../components/edit-profile.php';
     }
     ?>
 
     <section class="grid grid-cols-1 grid-cols-[280px_1fr] gap-10 pb-16 mt-10">
         <!-- All posts -->
-        <aside>
+        <aside >
             <div class="flex flex-row items-baseline justify-between mb-2">
-                <h2 class="text-lg text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
-                    All posts</h2>
-                <?php if($can_edit): ?>
-                    <button class="text-sm text-accent hover:opacity-80 cursor-pointer" id="openCreatePostModal">+ New</button>
+                <h1 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif;">
+                    All posts</h1>
+                <?php if ($can_edit): ?>
+                    <button class="text-sm text-accent hover:opacity-80 cursor-pointer" id="open-create-post">+ New</button>
                 <?php endif; ?>
             </div>
             <?php foreach ($posts as $post): ?>
                 <?php
-                $postId = (int) ($post['id'] ?? 0);
+                $postId = $post['id'] ?? 0;
                 $postTitle = htmlspecialchars($post['title'] ?? 'Untitled');
-                $isActive = $postId === $selectedPostId;
+                $isActive = ((string) $postId) === ((string) $selectedPostId);
                 $postCreatedAt = $post['created_at'] ?? '';
-                $postUrl = '/project-blog/pages/blog.php?user=' . urlencode($user['username']) . '&post=' . $postId;
-                $postLinkClass = $isActive
-                    ? 'block text-sm mb-2 px-3 py-2 rounded-md border border-accent text-foreground bg-card'
-                    : 'block text-sm mb-2 px-3 py-2 rounded-md border border-border text-muted-foreground hover:text-foreground';
+                $postUrl = '/project-blog/pages/blog.php?author=' . urlencode($author['username']) . '&post=' . $postId;
+                $postWrapperClass = $isActive
+                    ? 'group relative rounded-md border border-accent bg-accent/10 transition-all mb-2'
+                    : 'group relative rounded-md border border-transparent hover:border-border hover:bg-card transition-all mb-2';
+                $postTitleClass = $isActive
+                    ? 'text-sm mb-1 transition-colors text-accent'
+                    : 'text-sm mb-1 transition-colors text-foreground group-hover:text-accent';
                 ?>
-                <a href="<?php echo $postUrl; ?>" class="<?php echo $postLinkClass; ?>">
-                    <span class="block"><?php echo $postTitle; ?></span>
-                    <?php if (!empty($postCreatedAt)): ?>
-                        <h2 class="text-xs text-foreground" style="font-family: 'DM Sans', sans-serif;">
-                            <?php echo htmlspecialchars(readable_date($postCreatedAt)); ?>
-                        </h2>
-                    <?php endif; ?>
-
-                </a>
-
+                <div class="<?= $postWrapperClass ?>">
+                    <a href="<?= $postUrl ?>" class="block w-full text-left px-3 py-2">
+                        <h1 class="<?= $postTitleClass ?>" style="font-family: 'Playfair Display', serif; font-weight: 600;"><?= $postTitle ?></h1>
+                        <?php if (!empty($postCreatedAt)): ?>
+                            <h2 class="text-xs text-muted-foreground" style="font-family: 'DM Sans', sans-serif;">
+                                <?= htmlspecialchars(readableDate($postCreatedAt)) ?>
+                            </h2>
+                        <?php endif; ?>
+                    </a>
+                </div>
             <?php endforeach; ?>
 
         </aside>
 
         <?php if ($can_edit) {
-            require_once __DIR__ . '/../components/create_post_modal.php';
+            require_once __DIR__ . '/../components/create-post-modal.php';
         }
         ?>
 
         <section class="border-b border-border pb-10">
             <?php if ($can_edit): ?>
                 <div class="flex justify-end">
-                    <button
-                        id="openCreatePostModalSecondary" class="text-sm mb-4 px-3 py-2 bg-accent text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
-                        Create new post
+                    <button id="open-create-post-secondary"
+                        class="text-sm mb-4 px-3 py-2 bg-accent text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">
+                        + Create new post
                     </button>
                 </div>
             <?php endif; ?>
@@ -271,36 +300,36 @@ require_once __DIR__ . '/../components/navbar.php';
                 <article>
                     <?php if (!empty($selectedTitle)): ?>
                         <h1 class="text-4xl text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
-                            <?php echo $selectedTitle; ?>
+                            <?= $selectedTitle ?>
                         </h1>
                     <?php endif; ?>
                     <?php if (!empty($selectedCreatedAt)): ?>
                         <h2 class="text-xs text-foreground" style="font-family: 'DM Sans', sans-serif;">
-                            <?php echo htmlspecialchars(readable_date($selectedCreatedAt)); ?>
+                            <?= htmlspecialchars(readableDate($selectedCreatedAt)) ?>
                         </h2>
                     <?php endif; ?>
                     <?php if (!empty($selectedFilename)): ?>
-                        <img src="/project-blog/uploads/<?php echo $selectedFilename; ?>"
-                            alt="<?php echo $selectedTitle ?: 'Post image'; ?>" class="w-full h-auto rounded-lg my-4">
+                        <img src="/project-blog/uploads/<?= $selectedFilename ?>" alt="<?= $selectedTitle ?: 'Post image' ?>"
+                            class="w-full h-auto rounded-lg my-4">
                     <?php endif; ?>
                     <?php if (!empty($selectedContent)): ?>
                         <p class="text-base text-foreground leading-relaxed mt-6" style="font-family: 'DM Sans', sans-serif;">
-                            <?php echo $selectedContent; ?>
+                            <?= $selectedContent ?>
                         </p>
                     <?php endif; ?>
                 </article>
             <?php else: ?>
                 <p class="text-muted-foreground">No posts yet.</p>
             <?php endif; ?>
-            <?php if ($can_edit): ?>
+            <?php if ($can_edit && $selectedPost): ?>
                 <div class="flex justify-end mt-4 gap-2">
                     <button
                         class="text-xs px-2 py-1 border border-primary text-secondary-foreground rounded-md hover:bg-primary/10 transition-colors cursor-pointer">
                         Edit post
                     </button>
                     <form method="POST">
-                        <input type="hidden" name="post_id" value="<?php echo (int) $selectedPostId; ?>">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                        <input type="hidden" name="post_id" value="<?= htmlspecialchars($selectedPostId) ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                         <button type="submit" name="action" value="deleted_post"
                             class="text-xs px-2 py-1 border border-destructive text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer">
                             Delete
@@ -315,11 +344,11 @@ require_once __DIR__ . '/../components/navbar.php';
 
 <?php if ($can_edit): ?>
     <script>
-        const editProfileModal = document.getElementById('editProfileModal');
-        const openEditProfileModal = document.getElementById('openEditProfileModal');
-        const closeEditProfileModal = document.getElementById('closeEditProfileModal');
-        const cancelEditProfileModal = document.getElementById('cancelEditProfileModal');
-        const editProfileBackdrop = document.getElementById('editProfileBackdrop');
+        const editProfileModal = document.getElementById('edit-profile');
+        const openEditProfileModal = document.getElementById('open-edit-profile');
+        const closeEditProfileModal = document.getElementById('close-edit-profile');
+        const cancelEditProfileModal = document.getElementById('cancel-edit-profile');
+        const editProfileBackdrop = document.getElementById('edit-profile-backdrop');
 
         function openProfileModal() {
             if (!editProfileModal) return;
@@ -346,12 +375,12 @@ require_once __DIR__ . '/../components/navbar.php';
             openProfileModal();
         <?php endif; ?>
 
-        const createPostModal = document.getElementById('createPostModal');
-        const openCreatePostModal = document.getElementById('openCreatePostModal');
-        const openCreatePostModalSecondary = document.getElementById('openCreatePostModalSecondary');
-        const closeCreatePostModal = document.getElementById('closeCreatePostModal');
-        const cancelCreatePostModal = document.getElementById('cancelCreatePostModal');
-        const createPostBackdrop = document.getElementById('createPostBackdrop');
+        const createPostModal = document.getElementById('create-post');
+        const openCreatePostModal = document.getElementById('open-create-post');
+        const openCreatePostModalSecondary = document.getElementById('open-create-post-secondary');
+        const closeCreatePostModal = document.getElementById('close-create-post');
+        const cancelCreatePostModal = document.getElementById('cancel-create-post');
+        const createPostBackdrop = document.getElementById('create-post-backdrop');
 
         function openPostModal() {
             createPostModal.classList.remove('hidden');

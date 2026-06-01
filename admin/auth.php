@@ -1,8 +1,7 @@
 <?php
-
-function login_user($username, $password)
-{
-    $user = get_user($username);
+function loginUser($username, $password)
+{   // Checks if user exists and password is correct
+    $user = getUser($username);
 
     if ($user && password_verify($password, $user['password'])) {
         return $user;
@@ -11,14 +10,15 @@ function login_user($username, $password)
     return false;
 }
 
-function register_user($username, $password, $email)
+function registerUser($firstname, $lastname, $username, $password, $email)
 {
-    $user = get_user($username);
+    // Checks if username already exists, if not creates a new user with hashed password
+    $user = getUser($username);
     if ($user) {
         return false;
     }
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    return add_user($username, $hashed_password, $email);
+    return addUser($firstname, $lastname, $username, $hashed_password, $email);
 }
 ?>

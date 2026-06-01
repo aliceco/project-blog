@@ -24,6 +24,7 @@
   --input: transparent;
   --input-background: #EDE7DC;
   --switch-background: #C4B8A8;
+  --font-weight-bold: 700;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: #C2714F;
@@ -56,7 +57,7 @@ body {
 h1 {
   font-family: var(--font-display);
   /* font-size: 4rem; */
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
   line-height: 1.5;
 }
 

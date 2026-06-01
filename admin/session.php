@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-function create_csrf_token()
+function createCsrfToken()
 {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -13,20 +13,16 @@ function create_csrf_token()
 }
 
 // Helper functions for managing login-states
-function is_logged_in(): bool
+function isLoggedIn(): bool
 {
     return isset($_SESSION["user_id"]);
 }
 
-// function require_login(): void
-// {
-//     if (!is_logged_in()) {
-//         header("Location: index.php");
-//         exit();
-//     }
-// }
-
-
+function newCSRFToken()
+{
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    return $_SESSION['csrf_token'];
+}
 
 
 ?>

@@ -1,7 +1,7 @@
 <?php
 
 // takes a timestamp and turns into readable date format, if the timestamp is invalid, it returns the original string
-function readable_date($createdAt)
+function readableDate($createdAt)
 {
     if (!empty($createdAt)) {
         $timestamp = strtotime((string) $createdAt);
@@ -10,10 +10,10 @@ function readable_date($createdAt)
 
     return $date;
 }
-
-function hash_password($password){
-    $hash = password_hash($password, PASSWORD_DEFAULT);
-    return $hash;
+function checkIfEmpty($input){
+    if (trim($input) === '') {
+        return true;
+    }
+    return false;
 }
-
 ?>

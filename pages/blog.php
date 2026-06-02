@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         $titleInput = trim($_POST['title'] ?? '');
         $contentInput = trim($_POST['content'] ?? '');
         $imageInput = $_FILES['post-image'] ?? null;
-        
+
         $uploadedFile = validateOptionalImageUpload($imageInput, 409600);
 
         $fileUploadSuccess = $uploadedFile['uploaded'];
@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
                 $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
 
             } else {
-                
+
                 $errors['post-image'] = 'Could not save uploaded file.';
             }
         }
@@ -321,11 +321,11 @@ if ($selectedPost === null && !empty($posts)) {
 }
 
 // Variables for for user data
-$firstname = htmlspecialchars($author['firstname'] ?? '');
-$lastname = htmlspecialchars($author['lastname'] ?? '');
-$username = htmlspecialchars($author['username'] ?? '');
-$title = htmlspecialchars($author['title'] ?? '');
-$bio = htmlspecialchars($author['bio'] ?? '');
+$firstname = htmlspecialchars($author['firstname']);
+$lastname = htmlspecialchars($author['lastname']);
+$username = htmlspecialchars($author['username']);
+$title = htmlspecialchars($author['title']);
+$bio = htmlspecialchars($author['bio']);
 $profileImage = htmlspecialchars($author['profile_image'] ?? '/project-blog/images/default-avatar.jpg');
 
 // Variables for for post data
@@ -344,9 +344,19 @@ require_once __DIR__ . '/../components/navbar.php';
         <div class="flex items-center space-x-4 mb-6">
             <img src="<?= $profileImage ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
             <div>
-                <h1 class="text-3xl text-foreground" style="font-family: 'Playfair Display', serif; font-weight: 600;">
+                <div class="flex flex-row gap-2">
+                    <h1 class="text-3xl text-foreground"
+                        style="font-family: 'Playfair Display', serif; font-weight: 600;">
+                        <?= $firstname ?>
+                    </h1>
+                    <h1 class="text-3xl text-foreground"
+                        style="font-family: 'Playfair Display', serif; font-weight: 600;">
+                        <?= $lastname ?>
+                    </h1>
+                </div>
+                <h2>
                     <?= $username ?>
-                </h1>
+                </h2>
 
                 <?php if (!empty($title)): ?>
                     <p class="text-sm text-muted-foreground" style="font-family: 'DM Sans', sans-serif;">
@@ -462,19 +472,20 @@ require_once __DIR__ . '/../components/navbar.php';
                         class="text-xs px-2 py-1 border border-primary text-secondary-foreground rounded-md hover:bg-primary/10 transition-colors cursor-pointer">
                         Edit post
                     </button>
-                    <form method="POST">
-                        <input type="hidden" name="post_id" value="<?= htmlspecialchars($selectedPostId) ?>">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-                        <button type="submit" name="action" value="deleted_post"
-                            class="text-xs px-2 py-1 border border-destructive text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer">
-                            Delete
-                        </button>
-                    </form>
+                    <button id="open-delete-modal"
+                        class="text-xs px-2 py-1 border border-destructive text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer">
+                        Delete
+                    </button>
+
                 </div>
             <?php endif; ?>
 
             <?php if ($can_edit) {
                 require_once __DIR__ . '/../components/edit-post.php';
+            }
+            ?>
+            <?php if ($can_edit) {
+                require_once __DIR__ . '/../components/delete-modal.php';
             }
             ?>
         </section>
@@ -544,6 +555,16 @@ require_once __DIR__ . '/../components/navbar.php';
             backdrop: document.getElementById('edit-post-backdrop'),
             autoOpen: <?= $showEditPostModal ? 'true' : 'false' ?>
         });
+
+        const deleteModal = setupModal({
+            modal: document.getElementById('delete-modal'),
+            openButtons: [document.getElementById('open-delete-modal')],
+            closeButtons: [
+                document.getElementById('close-delete-post'),
+                document.getElementById('cancel-delete-post')
+            ],
+            backdrop: document.getElementById('delete-backdrop'),
+        })
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {

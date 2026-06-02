@@ -18,7 +18,9 @@ $featuredPost = $posts[0]; // Get the most recent post as the featured post
 $featuredPuthor = getUserById($featuredPost['user_id']);
 $featuredPostDate = readableDate($featuredPost['created_at']);
 $featuredUrl = '/project-blog/pages/blog.php?author=' . urlencode($featuredPuthor['username']) . '&post=' . $featuredPost['id'];
+
 $authors = getUsers();
+
 
 
 ?>
@@ -44,7 +46,7 @@ $authors = getUsers();
         class="text-accent hover:text-primary transition-colors">Read more -></a>
     </div>
     <div class="w-1/3">
-      <img src="/project-blog/images/default-avatar.jpg" alt="Blog post image" class="w-full h-auto rounded-lg my-4">
+      <img src="<?= $featuredPost['image_path']?>" alt="Blog post image" class="w-full h-auto rounded-lg my-4">
     </div>
   </section>
 

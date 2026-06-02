@@ -84,8 +84,8 @@ require_once __DIR__ . '/../components/navbar.php';
         </section>
     </article>
 </main>
+<?= require_once __DIR__ . '/../includes/footer.php'; ?>
 
-<?= require_once __DIR__ . '/includes/footer.php'; ?>
 </body>
 
 </html>

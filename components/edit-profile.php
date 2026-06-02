@@ -25,8 +25,8 @@
               style="font-family: 'DM Sans', sans-serif;">First name</label>
             <input type="text" name="firstname" value="<?= $firstname ?>"
               class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-              <?php if (!empty($errors['firstname'])): ?>
-                <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['firstname']) ?></p>
+              <?php if (!empty($editProfileErrors['firstname'])): ?>
+                <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editProfileErrors['firstname']) ?></p>
               <?php endif; ?>
           </div>
           <div>
@@ -34,8 +34,8 @@
               style="font-family: 'DM Sans', sans-serif;">Last name</label>
             <input type="text" name="lastname" value="<?= $lastname ?>"
               class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-              <?php if (!empty($errors['lastname'])): ?>
-                <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['lastname']) ?></p>
+              <?php if (!empty($editProfileErrors['lastname'])): ?>
+                <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editProfileErrors['lastname']) ?></p>
               <?php endif; ?>
           </div>
         </div>
@@ -44,8 +44,8 @@
             style="font-family: 'DM Sans', sans-serif;">Username</label>
           <input type="text" name="username" value="<?= $username ?>"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-          <?php if (!empty($errors['username'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['username']) ?></p>
+          <?php if (!empty($editProfileErrors['username'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editProfileErrors['username']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -69,14 +69,14 @@
             style="font-family: 'DM Sans', sans-serif;">Profile image</label>
           <input type="file" name="profile_image" accept="image/*"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-          <?php if (!empty($errors['profile_image'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['profile_image']) ?></p>
+          <?php if (!empty($editProfileErrors['profile_image'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editProfileErrors['profile_image']) ?></p>
           <?php endif; ?>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
-          <?php if (!empty($errors['general'])): ?>
-            <p class="text-sm text-red-600 mr-auto"><?= htmlspecialchars($errors['general']) ?></p>
+          <?php if (!empty($editProfileErrors['general'])): ?>
+            <p class="text-sm text-red-600 mr-auto"><?= htmlspecialchars($editProfileErrors['general']) ?></p>
           <?php endif; ?>
           <button id="cancel-edit-profile" type="button"
             class="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">

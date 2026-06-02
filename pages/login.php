@@ -54,8 +54,18 @@ function validateRegistrationInput($firstname, $lastname, $username, $email,  $p
 
 $errors = $_SESSION['form_errors'] ?? []; // Stores errors from forms
 $activeTab = $_SESSION['active_tab'] ?? 'login';
+$formData = $_SESSION['form_data'] ?? [];
 
-unset($_SESSION['form_errors'], $_SESSION['active_tab']); // Resets the errors and active tab to not leave any error traces 
+unset($_SESSION['form_errors'], $_SESSION['active_tab'], $_SESSION['form_data']); // Resets temporary form state after load
+
+function oldFieldValue($field, $errors, $formData)
+{
+  if (!empty($errors[$field])) {
+    return '';
+  }
+
+  return htmlspecialchars($formData[$field] ?? '');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? 'login'; // Check which form is being submitted
@@ -91,11 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // handles registration
     if ($action === 'register') {
-      $firstname = trim($_POST['firstname'] ?? '');
-      $lastname = trim($_POST['lastname'] ?? '');
-      $username = trim($_POST['username'] ?? '');
-      $password = $_POST['password'] ?? '';
-      $email = trim($_POST['email'] ?? '');
+      $firstname = trim($_POST['firstname']);
+      $lastname = trim($_POST['lastname']);
+      $username = trim($_POST['username']);
+      $password = $_POST['password'];
+      $email = trim($_POST['email']);
       $gdpr = isset($_POST['gdpr']);
 
       $errors = validateRegistrationInput($firstname, $lastname, $username, $email, $password, $gdpr);
@@ -120,6 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Avoids resubmitting form when refreshing page & saves errors in session to show them to user
     $_SESSION['form_errors'] = $errors;
     $_SESSION['active_tab'] = $activeTab;
+    $_SESSION['form_data'] = [
+      'firstname' => trim($_POST['firstname'] ?? ''),
+      'lastname' => trim($_POST['lastname'] ?? ''),
+      'username' => trim($_POST['username'] ?? ''),
+      'email' => trim($_POST['email'] ?? ''),
+    ];
     header('Location: /project-blog/pages/login.php');
     exit();
   }
@@ -160,7 +176,8 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 
         <label for="login-username" class="text-sm font-medium text-foreground">Username</label>
         <input id="login-username" name="username" type="text" placeholder="Your Username"
-          class="px-4 py-2 border border-border rounded-r-md focus:outline-none focus:ring-2 focus:ring-primary">
+          value="<?= oldFieldValue('username', $errors, $formData) ?>"
+          class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <?php if (!empty($errors['username']) && $activeTab === 'login'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['username']) ?></p>
         <?php endif; ?>
@@ -173,7 +190,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
         <?php endif; ?>
 
         <button type="submit"
-          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity">Login</button>
+          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">Login</button>
         <?php if (!empty($errors['general']) && $activeTab === 'login'): ?>
           <p class="text-sm text-red-600">
             <?= htmlspecialchars($errors['general']) ?>
@@ -188,6 +205,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 
         <label for="register-firstname" class="text-sm font-medium text-foreground">First Name</label>
         <input id="register-firstname" name="firstname" type="text" placeholder="Jane"
+          value="<?= oldFieldValue('firstname', $errors, $formData) ?>"
           class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <?php if (!empty($errors['firstname']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['firstname']) ?></p>
@@ -195,6 +213,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 
         <label for="register-lastname" class="text-sm font-medium text-foreground">Last Name</label>
         <input id="register-lastname" name="lastname" type="text" placeholder="Doe"
+          value="<?= oldFieldValue('lastname', $errors, $formData) ?>"
           class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <?php if (!empty($errors['lastname']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['lastname']) ?></p>
@@ -202,6 +221,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 
         <label for="register-username" class="text-sm font-medium text-foreground">Username</label>
         <input id="register-username" name="username" type="text" placeholder="janedoe"
+          value="<?= oldFieldValue('username', $errors, $formData) ?>"
           class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <?php if (!empty($errors['username']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['username']) ?></p>
@@ -209,6 +229,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 
         <label for="register-email" class="text-sm font-medium text-foreground">Email</label>
         <input id="register-email" name="email" type="email" placeholder="you@example.com"
+          value="<?= oldFieldValue('email', $errors, $formData) ?>"
           class="px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <?php if (!empty($errors['email']) && $activeTab === 'register'): ?>
           <p class="text-sm text-red-600"><?= htmlspecialchars($errors['email']) ?></p>
@@ -222,10 +243,10 @@ require_once __DIR__ . '/../includes/document-head.php';?>
         <?php endif; ?>
 
         <div class="text-sm text-muted-foreground align-items-center gap-2 flex">
-          <input id="gdpr" name="gdpr" type="checkbox" required>
-          <label for="gdpr" class="text-xs">
+          <input id="gdpr" name="gdpr" type="checkbox" class="cursor-pointer">
+          <label for="gdpr" class="text-xs ">
             I agree to the processing of my personal data in accordance with the
-            <a href="/privacy-policy">Privacy Policy</a>.
+            <a href="/project-blog/pages/gdpr.php" class="hover:text-primary cursor-pointer underline">Privacy Policy</a>.
             You can withdraw your consent at any time.
           </label>
         </div>
@@ -238,7 +259,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
         <?php endif; ?>
 
         <button type="submit"
-          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity">Register</button>
+          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity cursor-pointer">Register</button>
 
       </form>
     </div>
@@ -264,8 +285,8 @@ require_once __DIR__ . '/../includes/document-head.php';?>
     loginMessage.classList.toggle('hidden', !isLogin);
     registerMessage.classList.toggle('hidden', isLogin);
 
-    loginTab.className = isLogin ? 'px-3 py-2 w-32 rounded-l-md bg-primary text-primary-foreground' : 'px-3 py-2 w-32 rounded-l-md bg-secondary text-secondary-foreground';
-    registerTab.className = !isLogin ? 'px-3 py-2 w-32 rounded-r-md bg-primary text-primary-foreground' : 'px-3 py-2 w-32 rounded-r-md bg-secondary text-secondary-foreground';
+    loginTab.className = isLogin ? 'px-3 py-2 w-32 rounded-l-md bg-primary text-primary-foreground cursor-pointer' : 'px-3 py-2 w-32 rounded-l-md bg-secondary text-secondary-foreground cursor-pointer';
+    registerTab.className = !isLogin ? 'px-3 py-2 w-32 rounded-r-md bg-primary text-primary-foreground cursor-pointer' : 'px-3 py-2 w-32 rounded-r-md bg-secondary text-secondary-foreground cursor-pointer';
   }
 
   loginTab.addEventListener('click', () => show('login'));

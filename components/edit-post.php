@@ -23,10 +23,10 @@
         <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
             style="font-family: 'DM Sans', sans-serif;">Title</label>
-          <input type="text" name="title" value="<?= htmlspecialchars($selectedTitle) ?>"
+          <input type="text" name="title" value="<?= htmlspecialchars($editPostOld['title'] ?? ($selectedPost['title'])) ?>"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-          <?php if (!empty($errors['title'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['title']) ?></p>
+          <?php if (!empty($editPostErrors['title'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editPostErrors['title']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -35,9 +35,9 @@
             style="font-family: 'DM Sans', sans-serif;">Content</label>
           <textarea name="content" rows="5"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all resize-y"
-            style="line-height: 1.7"><?= htmlspecialchars($selectedContent) ?></textarea>
-          <?php if (!empty($errors['content'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['content']) ?></p>
+            style="line-height: 1.7"><?= htmlspecialchars($editPostOld['content'] ?? ($selectedPost['content'])) ?></textarea>
+          <?php if (!empty($editPostErrors['content'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editPostErrors['content']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -48,16 +48,16 @@
             previous image</p>
           <input type="file" name="post-image" accept="image/*"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-          <?php if (!empty($errors['post-image'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['post-image']) ?></p>
+          <?php if (!empty($editPostErrors['post-image'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($editPostErrors['post-image']) ?></p>
           <?php endif; ?>
         </div>
 
         <div class="flex items-center justify-between gap-3 pt-2 border-t border-border">
           <div>
-            <?php if (!empty($errors['csrf']) || !empty($errors['general'])): ?>
+            <?php if (!empty($editPostErrors['csrf']) || !empty($editPostErrors['general'])): ?>
               <div class="text-sm text-red-600">
-                <?= htmlspecialchars($errors['csrf'] ?? $errors['general']) ?>
+                <?= htmlspecialchars($editPostErrors['csrf'] ?? $editPostErrors['general']) ?>
               </div>
             <?php endif; ?>
           </div>

@@ -5,7 +5,7 @@
             </a>
         </h1>
         <?php if (isLoggedIn()): ?>
-            <?php $sessionUser = (string)($_SESSION['username'] ?? '');  $logoutCsrfToken = createCsrfToken(); ?>
+            <?php $sessionUser = ($_SESSION['username'] ?? '');  $logoutCsrfToken = createCsrfToken(); ?>
             
             <div class="relative">
                 <div id="user-menu"

@@ -6,10 +6,18 @@ require_once __DIR__ . '/../admin/utils.php';
 
 $csrfToken = createCsrfToken();
 
-$errors = [];
-$showEditProfileModal = false;
-$showCreatePostModal = false;
-$showEditPostModal = false;
+$editProfileErrors = $_SESSION['editProfileErr'] ?? [];
+$createPostErrors = $_SESSION['createPostErr'] ?? [];
+$editPostErrors = $_SESSION['editPostErr'] ?? [];
+$createPostOld = $_SESSION['createPostOld'] ?? [];
+$editPostOld = $_SESSION['editPostOld'] ?? [];
+$openModal = $_SESSION['openModal'] ?? '';
+
+unset($_SESSION['editProfileErr'], $_SESSION['createPostErr'], $_SESSION['editPostErr'], $_SESSION['createPostOld'], $_SESSION['editPostOld'], $_SESSION['openModal']); // Resets temporary form state after load
+
+$showEditProfileModal = $openModal === 'edit_profile';
+$showCreatePostModal = $openModal === 'create_post';
+$showEditPostModal = $openModal === 'edit_post';
 
 $authorQuery = trim($_GET['author']);
 $author = getUser($authorQuery);
@@ -39,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         empty($_SESSION['csrf_token']) ||
         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
     ) {
-        $errors['csrf'] = 'Invalid CSRF token.';
+        $editProfileErrors['csrf'] = 'Invalid CSRF token.';
     } else {
         $input = [
             'firstname' => trim($_POST['firstname']),
@@ -70,32 +78,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         $hasChanges = $changedFirstname || $changedLastname || $changedUsername || $changedTitle || $changedBio || $fileUploadSuccess;
 
         if (!$uploadedFile['ok']) {
-            $errors['profile_image'] = $uploadedFile['error'];
+            $editProfileErrors['profile_image'] = $uploadedFile['error'];
         }
 
-        if ($fileUploadSuccess && empty($errors['profile_image'])) {
+        if ($fileUploadSuccess && empty($editProfileErrors['profile_image'])) {
             $newFilename = 'profile_' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
             $profileImageDir = $uploadDir . 'profile_images/';
             if (!is_dir($profileImageDir) && !mkdir($profileImageDir, 0755, true)) {
-                $errors['profile_image'] = 'Upload folder could not be created.';
+                $editProfileErrors['profile_image'] = 'Upload folder could not be created.';
             } elseif (move_uploaded_file($input['profile_image']['tmp_name'], $profileImageDir . $newFilename)) {
                 $profileImagePath = '/project-blog/uploads/profile_images/' . $newFilename;
 
             } else {
-                $errors['profile_image'] = 'Could not save uploaded file.';
+                $editProfileErrors['profile_image'] = 'Could not save uploaded file.';
             }
         }
 
         if ($input['firstname'] === '') {
-            $errors['firstname'] = 'First name is required.';
+            $editProfileErrors['firstname'] = 'First name is required.';
         } elseif ($input['lastname'] === '') {
-            $errors['lastname'] = 'Last name is required.';
+            $editProfileErrors['lastname'] = 'Last name is required.';
         } elseif ($input['username'] === '') {
-            $errors['username'] = 'Username is required.';
+            $editProfileErrors['username'] = 'Username is required.';
         } elseif ($changedUsername && usernameExists($input['username'])) {
-            $errors['username'] = 'Username already exists.';
+            $editProfileErrors['username'] = 'Username already exists.';
         } elseif (!$hasChanges) {
-            $errors['general'] = 'No changes made.';
+            $editProfileErrors['general'] = 'No changes made.';
         } else {
             $updatedUser = updateUserProfile($_SESSION['user_id'], $input['firstname'], $input['lastname'], $input['username'], $input['title'], $input['bio'], $profileImagePath);
 
@@ -114,14 +122,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
                 exit();
             }
 
-            $errors['general'] = $updatedUser === 0
+            $editProfileErrors['general'] = $updatedUser === 0
                 ? 'No changes were saved.'
                 : 'Could not save changes. Please try again.';
         }
     }
 
-    if (!empty($errors)) {
-        $showEditProfileModal = true;
+    if (!empty($editProfileErrors)) {
+        $_SESSION['editProfileErr'] = $editProfileErrors;
+        $_SESSION['openModal'] = 'edit_profile';
+
+        $redirect = '/project-blog/pages/blog.php?author=' . urlencode($author['username']);
+        $sessionPost = $_GET['post'] ?? 0;
+        if ($sessionPost > 0) {
+            $redirect .= '&post=' . urlencode((string) $sessionPost);
+        }
+
+        header('Location: ' . $redirect);
+        exit();
     }
 }
 
@@ -138,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
         empty($_SESSION['csrf_token']) ||
         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
     ) {
-        $errors['csrf'] = 'Invalid CSRF token.';
+        $createPostErrors['csrf'] = 'Invalid CSRF token.';
     } else {
         $postTitle = trim($_POST['title']);
         $postContent = trim($_POST['content']);
@@ -151,28 +169,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
         $postImagePath = null;
 
         if (!$uploadedFile['ok']) {
-            $errors['post-image'] = $uploadedFile['error'];
+            $createPostErrors['post-image'] = $uploadedFile['error'];
         }
 
-        if ($fileUploadSuccess && empty($errors['post-image'])) {
+        if ($fileUploadSuccess && empty($createPostErrors['post-image'])) {
             $newFilename = 'post' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
             $postImageDir = $uploadDir . 'post_images/';
 
             if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
-                $errors['post-image'] = 'Upload folder could not be created.';
+                $createPostErrors['post-image'] = 'Upload folder could not be created.';
             } elseif (move_uploaded_file($postImage['tmp_name'], $postImageDir . $newFilename)) {
                 $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
 
             } else {
-                $errors['post-image'] = 'Could not save uploaded file.';
+                $createPostErrors['post-image'] = 'Could not save uploaded file.';
             }
         }
 
 
         if ($postTitle === '') {
-            $errors['title'] = 'Title is required.';
+            $createPostErrors['title'] = 'Title is required.';
         } elseif ($postContent === '') {
-            $errors['content'] = 'Content is required.';
+            $createPostErrors['content'] = 'Content is required.';
         } else {
             $createdPostID = addPost($_SESSION['user_id'], $postTitle, $postContent, $postImagePath);
 
@@ -183,12 +201,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
                 header('Location: ' . $redirect);
                 exit();
             }
-            $errors['general'] = 'Could not create post. Please try again.';
+            $createPostErrors['general'] = 'Could not create post. Please try again.';
         }
     }
 
-    if (!empty($errors)) {
-        $showCreatePostModal = true;
+    if (!empty($createPostErrors)) {
+        $_SESSION['createPostErr'] = $createPostErrors;
+        $_SESSION['createPostOld'] = [
+            'title' => trim($_POST['title'] ?? ''),
+            'content' => trim($_POST['content'] ?? ''),
+        ];
+        $_SESSION['openModal'] = 'create_post';
+
+        $redirect = '/project-blog/pages/blog.php?author=' . urlencode($author['username']);
+        $sessionPost = $_GET['post'] ?? 0;
+        if ($sessionPost > 0) {
+            $redirect .= '&post=' . urlencode((string) $sessionPost);
+        }
+
+        header('Location: ' . $redirect);
+        exit();
     }
 }
 
@@ -206,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         empty($_SESSION['csrf_token']) ||
         !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
     ) {
-        $errors['csrf'] = 'Invalid CSRF token.';
+        $editPostErrors['csrf'] = 'Invalid CSRF token.';
     } else {
         $postImagePath = NULL;
         $postId = ($_POST['post_id'] ?? 0);
@@ -219,28 +251,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         $fileUploadSuccess = $uploadedFile['uploaded'];
 
         if (!$uploadedFile['ok']) {
-            $errors['post-image'] = $uploadedFile['error'];
+            $editPostErrors['post-image'] = $uploadedFile['error'];
         }
-        if ($fileUploadSuccess && empty($errors['post-image'])) {
+        if ($fileUploadSuccess && empty($editPostErrors['post-image'])) {
             $newFilename = 'post' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
             $postImageDir = $uploadDir . 'post_images/';
 
             if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
-                $errors['post-image'] = 'Upload folder could not be created.';
+                $editPostErrors['post-image'] = 'Upload folder could not be created.';
             } elseif (move_uploaded_file($imageInput['tmp_name'], $postImageDir . $newFilename)) {
                 $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
 
             } else {
 
-                $errors['post-image'] = 'Could not save uploaded file.';
+                $editPostErrors['post-image'] = 'Could not save uploaded file.';
             }
         }
 
 
         if ($titleInput === '') {
-            $errors['title'] = 'Title is required.';
+            $editPostErrors['title'] = 'Title is required.';
         } elseif ($contentInput === '') {
-            $errors['content'] = 'Content is required.';
+            $editPostErrors['content'] = 'Content is required.';
         } else {
             $updatedPost = updatePost($postId, $_SESSION['user_id'], $titleInput, $contentInput, $postImagePath);
 
@@ -253,15 +285,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             }
 
             if ($updatedPost === 0) {
-                $errors['general'] = 'No changes made.';
+                $editPostErrors['general'] = 'No changes made.';
             } else {
-                $errors['general'] = 'Could not update post. Please try again.';
+                $editPostErrors['general'] = 'Could not update post. Please try again.';
             }
         }
     }
 
-    if (!empty($errors)) {
-        $showEditPostModal = true;
+    if (!empty($editPostErrors)) {
+        $_SESSION['editPostErr'] = $editPostErrors;
+        $_SESSION['editPostOld'] = [
+            'post_id' => (int) ($_POST['post_id'] ?? 0),
+            'title' => trim($_POST['title'] ?? ''),
+            'content' => trim($_POST['content'] ?? ''),
+        ];
+        $_SESSION['openModal'] = 'edit_post';
+
+        $redirect = '/project-blog/pages/blog.php?author=' . urlencode($author['username']);
+        $sessionPost = (int) ($_POST['post_id'] ?? 0);
+        if ($sessionPost > 0) {
+            $redirect .= '&post=' . urlencode((string) $sessionPost);
+        }
+
+        header('Location: ' . $redirect);
+        exit();
     }
 }
 

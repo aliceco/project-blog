@@ -20,10 +20,10 @@
         <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
             style="font-family: 'DM Sans', sans-serif;">Title</label>
-          <input type="text" name="title"
+          <input type="text" name="title" value="<?= htmlspecialchars($createPostOld['title'] ) ?>"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-          <?php if (!empty($errors['title'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['title']) ?></p>
+          <?php if (!empty($createPostErrors['title'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($createPostErrors['title']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -32,9 +32,9 @@
             style="font-family: 'DM Sans', sans-serif;">Content</label>
           <textarea name="content" rows="5"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all resize-y"
-            style="line-height: 1.7"></textarea>
-          <?php if (!empty($errors['content'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['content']) ?></p>
+            style="line-height: 1.7"><?= htmlspecialchars($createPostOld['content'] ) ?></textarea>
+          <?php if (!empty($createPostErrors['content'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($createPostErrors['content']) ?></p>
           <?php endif; ?>
         </div>
 
@@ -44,12 +44,17 @@
             style="font-family: 'DM Sans', sans-serif;">Image</label>
           <input type="file" name="post-image" accept="image/*"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
-          <?php if (!empty($errors['post-image'])): ?>
-            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($errors['post-image']) ?></p>
+          <?php if (!empty($createPostErrors['post-image'])): ?>
+            <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($createPostErrors['post-image']) ?></p>
           <?php endif; ?>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-2 border-t border-border">
+          <?php if (!empty($createPostErrors['csrf']) || !empty($createPostErrors['general'])): ?>
+            <p class="text-sm text-red-600 mr-auto">
+              <?= htmlspecialchars($createPostErrors['csrf'] ?? $createPostErrors['general']) ?>
+            </p>
+          <?php endif; ?>
           <button id="cancel-create-post" type="button"
             class="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >

@@ -3,7 +3,7 @@ $title = htmlspecialchars($post['title'] ?? 'Untitled');
 $author = htmlspecialchars(getUserById($post['user_id'])['username'] ?? '');
 $excerpt = htmlspecialchars(substr($post['content'] ?? '', 0, 180) . '...');
 $date = readableDate($post['created_at'] ?? '');
-$postUrl = '/project-blog/pages/blog.php?author=' . urlencode($author) . '&post=' . ($post['id'] ?? '');
+$postUrl = BASE_URL . 'pages/blog.php?author=' . urlencode($author) . '&post=' . ($post['id'] ?? '');
 ?>
 
 <article class="py-6 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-start group">
@@ -14,10 +14,10 @@ $postUrl = '/project-blog/pages/blog.php?author=' . urlencode($author) . '&post=
       <?php endif; ?>
     </div>
 
-    <h1 class="text-xl text-foreground group-hover:text-accent transition-colors mb-1">
+    <h3 class="text-xl text-foreground group-hover:text-accent transition-colors mb-1">
       <a href="<?= $postUrl ?>"
         class="cursor-pointer"><?= $title ?></a>
-    </h1>
+    </h3>
 
     <p class="text-sm text-muted-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
       <?= $excerpt ?>

@@ -1,5 +1,6 @@
 <?php
 $head = 'Home';
+require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/admin/session.php';
 require_once __DIR__ . '/admin/db.php';
 require_once __DIR__ . '/admin/utils.php';
@@ -10,7 +11,7 @@ $posts = getPostsSorted();
 $featuredPost = $posts[0]; // Get the most recent post as the featured post
 $featuredPuthor = getUserById($featuredPost['user_id']);
 $featuredPostDate = readableDate($featuredPost['created_at']);
-$featuredUrl = '/project-blog/pages/blog.php?author=' . urlencode($featuredPuthor['username']) . '&post=' . $featuredPost['id'];
+$featuredUrl = BASE_URL . 'pages/blog.php?author=' . urlencode($featuredPuthor['username']) . '&post=' . $featuredPost['id'];
 
 $authors = getUsers();
 
@@ -44,11 +45,11 @@ $authors = getUsers();
   </section>
 
   <section id="g" class="py-12 border-b border-border">
-    <h1 class="text-md text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 600;">
+    <h2 class="text-md text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 600;">
       Latest writing
-    </h1>
+    </h2>
     <div class="divide-y divide-border">
-      <?php foreach ($posts as $post): ?>
+      <?php foreach (array_slice($posts, 1) as $post): ?>
         <?php include __DIR__ . '/components/post-preview.php'; ?>
       <?php endforeach; ?>
     </div>
@@ -63,7 +64,7 @@ $authors = getUsers();
 
 
 
-
+<?= require_once __DIR__ . '/includes/footer.php'; ?>
 </body>
 
 </html>

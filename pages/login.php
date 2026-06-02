@@ -1,5 +1,6 @@
 <?php
 $title = 'Login';
+require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/auth.php';
@@ -91,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           session_regenerate_id(true);
           $_SESSION['user_id'] = $user['id'];
           $_SESSION['username'] = $user['username'];
-          header('Location: /project-blog/index.php');
+          header('Location: ' . BASE_URL . 'index.php');
           newCSRFToken();
           exit();
         }
@@ -117,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           session_regenerate_id(true);
           $_SESSION['user_id'] = $newUserId;
           $_SESSION['username'] = $username;
-          header('Location: /project-blog/index.php');
+          header('Location: ' . BASE_URL . 'index.php');
           newCSRFToken();
           exit();
         }
@@ -136,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'username' => trim($_POST['username'] ?? ''),
       'email' => trim($_POST['email'] ?? ''),
     ];
-    header('Location: /project-blog/pages/login.php');
+    header('Location: ' . BASE_URL . 'pages/login.php');
     exit();
   }
 }
@@ -145,7 +146,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 
 <header class="border-b border-border max-w-6xl mx-auto px-6 py-4 flex justify-between items-center ">
     <h1 class="text-2xl text-foreground">
-      <a href="/project-blog/index.php" class="hover:text-accent transition-colors">
+      <a href="<?= BASE_URL ?>index.php" class="hover:text-accent transition-colors">
         The Square
       </a>
     </h1>
@@ -246,7 +247,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
           <input id="gdpr" name="gdpr" type="checkbox" class="cursor-pointer">
           <label for="gdpr" class="text-xs ">
             I agree to the processing of my personal data in accordance with the
-            <a href="/project-blog/pages/gdpr.php" class="hover:text-primary cursor-pointer underline">Privacy Policy</a>.
+            <a href="<?= BASE_URL ?>pages/gdpr.php" class="hover:text-primary cursor-pointer underline">Privacy Policy</a>.
             You can withdraw your consent at any time.
           </label>
         </div>
@@ -297,6 +298,7 @@ require_once __DIR__ . '/../includes/document-head.php';?>
 </script>
 
 
+<?= require_once __DIR__ . '/includes/footer.php'; ?>
 </body>
 
 </html>

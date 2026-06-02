@@ -1,6 +1,7 @@
 <?php
 $head = 'Blog';
 require_once __DIR__ . '/../admin/session.php';
+require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../admin/db.php';
 require_once __DIR__ . '/../admin/utils.php';
 
@@ -22,14 +23,14 @@ $showEditPostModal = $openModal === 'edit_post';
 $authorQuery = trim($_GET['author']);
 $author = getUser($authorQuery);
 if (!$author) { // check if auhtor page exists, if not redirect to home page
-    header('Location: /project-blog/index.php');
+    header('Location: ' . BASE_URL . 'index.php');
     exit('User not found');
 }
 
-$sessionUserId = $_SESSION['user_id'];
-$sessionUser = getUserById($sessionUserId);
+$sessionUserId = $_SESSION['user_id'] ?? NULL;
+$sessionUser = $sessionUserId ? getUserById($sessionUserId) : null;
 
-$can_edit = isLoggedIn() && ($sessionUserId) === $author['id']; // Checks if sessionUser is owner of the profile
+$can_edit = isLoggedIn() && $sessionUserId === ($author['id'] ?? null);
 
 $uploadDir = __DIR__ . '/../uploads/';
 
@@ -87,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             if (!is_dir($profileImageDir) && !mkdir($profileImageDir, 0755, true)) {
                 $editProfileErrors['profile_image'] = 'Upload folder could not be created.';
             } elseif (move_uploaded_file($input['profile_image']['tmp_name'], $profileImageDir . $newFilename)) {
-                $profileImagePath = '/project-blog/uploads/profile_images/' . $newFilename;
+                $profileImagePath = BASE_URL . 'uploads/profile_images/' . $newFilename;
 
             } else {
                 $editProfileErrors['profile_image'] = 'Could not save uploaded file.';
@@ -111,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             if ($updatedUser > 0) {
                 newCSRFToken();
                 $_SESSION['username'] = $input['username'];
-                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($input['username']);
+                $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($input['username']);
                 $sessionPost = $_GET['post'] ?? 0;
 
                 if ($sessionPost > 0) {
@@ -132,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         $_SESSION['editProfileErr'] = $editProfileErrors;
         $_SESSION['openModal'] = 'edit_profile';
 
-        $redirect = '/project-blog/pages/blog.php?author=' . urlencode($author['username']);
+        $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($author['username']);
         $sessionPost = $_GET['post'] ?? 0;
         if ($sessionPost > 0) {
             $redirect .= '&post=' . urlencode((string) $sessionPost);
@@ -179,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
             if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
                 $createPostErrors['post-image'] = 'Upload folder could not be created.';
             } elseif (move_uploaded_file($postImage['tmp_name'], $postImageDir . $newFilename)) {
-                $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
+                $postImagePath = BASE_URL . 'uploads/post_images/' . $newFilename;
 
             } else {
                 $createPostErrors['post-image'] = 'Could not save uploaded file.';
@@ -197,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
             // Reload and redirect to updated profile page with the new created post selected
             if ($createdPostID) {
                 newCSRFToken();
-                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPostID;
+                $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $createdPostID;
                 header('Location: ' . $redirect);
                 exit();
             }
@@ -213,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
         ];
         $_SESSION['openModal'] = 'create_post';
 
-        $redirect = '/project-blog/pages/blog.php?author=' . urlencode($author['username']);
+        $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($author['username']);
         $sessionPost = $_GET['post'] ?? 0;
         if ($sessionPost > 0) {
             $redirect .= '&post=' . urlencode((string) $sessionPost);
@@ -260,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             if (!is_dir($postImageDir) && !mkdir($postImageDir, 0755, true)) {
                 $editPostErrors['post-image'] = 'Upload folder could not be created.';
             } elseif (move_uploaded_file($imageInput['tmp_name'], $postImageDir . $newFilename)) {
-                $postImagePath = '/project-blog/uploads/post_images/' . $newFilename;
+                $postImagePath = BASE_URL . 'uploads/post_images/' . $newFilename;
 
             } else {
 
@@ -279,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             // Reload and redirect to updated profile page with the updated post selected
             if ($updatedPost > 0) {
                 newCSRFToken();
-                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $postId;
+                $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($sessionUser['username']) . '&post=' . $postId;
                 header('Location: ' . $redirect);
                 exit();
             }
@@ -301,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         ];
         $_SESSION['openModal'] = 'edit_post';
 
-        $redirect = '/project-blog/pages/blog.php?author=' . urlencode($author['username']);
+        $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($author['username']);
         $sessionPost = (int) ($_POST['post_id'] ?? 0);
         if ($sessionPost > 0) {
             $redirect .= '&post=' . urlencode((string) $sessionPost);
@@ -335,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'dele
 
             if ($deleted) {
 
-                $redirect = '/project-blog/pages/blog.php?author=' . urlencode($sessionUser['username']) . '&updated=1';
+                $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($sessionUser['username']) . '&updated=1';
                 header('Location: ' . $redirect);
                 newCSRFToken();
                 exit();
@@ -373,7 +374,7 @@ $lastname = htmlspecialchars($author['lastname']);
 $username = htmlspecialchars($author['username']);
 $title = htmlspecialchars($author['title']);
 $bio = htmlspecialchars($author['bio']);
-$profileImage = htmlspecialchars($author['profile_image'] ?? '/project-blog/images/default-avatar.jpg');
+$profileImage = htmlspecialchars($author['profile_image'] ?? (BASE_URL . 'images/default-avatar.jpg'));
 
 // Variables for for post data
 $selectedTitle = htmlspecialchars($selectedPost['title'] ?? '');
@@ -389,7 +390,7 @@ require_once __DIR__ . '/../components/navbar.php';
 <main class="max-w-6xl mx-auto px-6 py-8">
     <section class="mt-10 border-b border-border pb-10">
         <div class="flex items-center space-x-4 mb-6">
-            <img src="<?= $profileImage ?>" alt="" class="w-40 h-40 rounded-full object-cover border">
+            <img src="<?= $profileImage ?> " alt="" class="w-40 h-40 rounded-full object-cover border">
             <div>
                 <div class="flex flex-row gap-2">
                     <h1 class="text-3xl text-foreground"
@@ -446,7 +447,7 @@ require_once __DIR__ . '/../components/navbar.php';
                 $postTitle = htmlspecialchars($post['title'] ?? 'Untitled');
                 $isActive = ((string) $postId) === ((string) $selectedPostId);
                 $postCreatedAt = $post['created_at'] ?? '';
-                $postUrl = '/project-blog/pages/blog.php?author=' . urlencode($author['username']) . '&post=' . $postId;
+                $postUrl = BASE_URL . 'pages/blog.php?author=' . urlencode($author['username']) . '&post=' . $postId;
                 $postWrapperClass = $isActive
                     ? 'group relative rounded-md border border-accent bg-accent/10 transition-all mb-2'
                     : 'group relative rounded-md border border-transparent hover:border-border hover:bg-card transition-all mb-2';
@@ -496,7 +497,7 @@ require_once __DIR__ . '/../components/navbar.php';
                         </h2>
                     <?php endif; ?>
                     <?php if (!empty($selectedFilename)): ?>
-                        <img src="/project-blog/uploads/<?= $selectedFilename ?>" alt="<?= $selectedTitle ?: 'Post image' ?>"
+                        <img src="<?= BASE_URL ?>uploads/<?= $selectedFilename ?>" alt="<?= $selectedTitle ?: 'Post image' ?>"
                             class="w-full h-auto rounded-lg my-4">
                     <?php endif; ?>
                     <?php if (!empty($selectedPostImagePath)): ?>
@@ -623,7 +624,7 @@ require_once __DIR__ . '/../components/navbar.php';
     </script>
 
 <?php endif; ?>
-
+<?= require_once __DIR__ . '/includes/footer.php'; ?>
 </body>
 
 </html>

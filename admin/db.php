@@ -26,7 +26,7 @@ $localPath = __DIR__ . '/db-credentials.php';
 
 // Sökväg till db-credentials.php på webbservern
 // VIKTIGT: Byt USER mot ditt användarnamn
-$serverPath = '/var/private/USER/db-credentials.php';
+$serverPath = '/var/private/alicoh5/db-credentials.php';
 
 // Om skriptet körs på webbservern används $serverPath
 // Annars används $localPath för att läsa in dina lokala databasuppgifter

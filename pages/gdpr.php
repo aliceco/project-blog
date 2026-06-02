@@ -21,70 +21,71 @@ require_once __DIR__ . '/../components/navbar.php';
                 Privacy Policy (GDPR)
             </h1>
             <p class="text-sm text-muted-foreground mt-2" style="font-family: 'DM Sans', sans-serif;">
-                Information om insamling och behandling av personuppgifter.
+                Information about the collection and processing of personal data.
             </p>
         </header>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Vilka uppgifter samlas in?</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">What data is collected?</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Ditt användarnamn plus annan information som du själv väljer att ladda upp till webbservern.
+                Your username and any other information you choose to upload to the web server.
             </p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Ändamål och ansvarig</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Purpose and data controller</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Skapandet av webbplatsen ingår i kursuppgifter för studenter vid Luleå tekniska universitet i kursen
-                Webbutveckling 2. Om du skapar en användare samlas ditt valda användarnamn och annan uppladdad information
-                in för att administrera ditt konto. Uppgifterna lagras på en webbserver som tillhandahålls av Microsoft Azure.
+                This website is part of coursework for students at Lulea University of Technology in the course
+                Web Development 2. If you create an account, your chosen username and any uploaded information are
+                collected to administer your account. Data is stored on a web server provided by Microsoft Azure.
             </p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Rättslig grund</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Legal basis</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Samtycke är den rättsliga grunden. Du kan när som helst återkalla ditt samtycke och dina uppgifter kommer då att tas bort.
+                Consent is the legal basis. You may withdraw your consent at any time, and your data will then be deleted.
             </p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Lagringstid</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Data retention period</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Uppgifterna lagras tills kursen är betygssatt, om du inte begär radering innan dess.
+                Data is stored until the course has been graded, unless you request deletion earlier.
             </p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Delning och överföring</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Sharing and transfers</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Plattformens tillhandahållare kan ta del av uppgifterna vid support och lagrar uppgifter i Norra Europa.
-                Uppgifter överförs inte till land utanför EU/EES.
+                The platform provider may access data for support purposes and stores data in Northern Europe.
+                Data is not transferred to countries outside the EU/EEA.
             </p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Viktigt att tänka på</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Important notice</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Dela inte känsliga uppgifter om dig själv eller andra. Det finns alltid en risk för dataläckage.
+                Do not share sensitive information about yourself or others. There is always a risk of data leakage.
             </p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Kontakt</h2>
+            <h2 class="text-lg text-foreground" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">Contact</h2>
             <p class="text-foreground leading-relaxed" style="font-family: 'DM Sans', sans-serif;">
-                Vid frågor kan du kontakta kursansvarig Susanne Fahlman: susanne.fahlman@ltu.se.
-                Om du är missnöjd med behandlingen av dina personuppgifter kan du kontakta Integritetsskyddsmyndigheten
-                eller universitetets dataskyddsombud via dataskydd@ltu.se.
+                If you have questions, you can contact course coordinator Susanne Fahlman: susanne.fahlman@ltu.se.
+                If you are dissatisfied with how your personal data is processed, you may contact the Swedish Authority
+                for Privacy Protection or the university's data protection officer at dataskydd@ltu.se.
             </p>
             <a href="https://www.ltu.se/om-ltu/personuppgifter-gdpr" target="_blank" rel="noopener noreferrer"
                 class="inline-block text-accent hover:opacity-80 underline">
-                Läs mer om behandling av personuppgifter (LTU)
+                Read more about personal data processing (LTU)
             </a>
         </section>
     </article>
 </main>
 
+<?= require_once __DIR__ . '/includes/footer.php'; ?>
 </body>
 
 </html>

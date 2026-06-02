@@ -20,7 +20,7 @@
         <div>
           <label class="block text-xs uppercase tracking-widest text-muted-foreground mb-1.5"
             style="font-family: 'DM Sans', sans-serif;">Title</label>
-          <input type="text" name="title" value="<?= htmlspecialchars($createPostOld['title'] ?? '') ?>"
+          <input type="text" name="title" value="<?= htmlspecialchars($createPostOld['title'] ) ?>"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all">
           <?php if (!empty($createPostErrors['title'])): ?>
             <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($createPostErrors['title']) ?></p>
@@ -32,7 +32,7 @@
             style="font-family: 'DM Sans', sans-serif;">Content</label>
           <textarea name="content" rows="5"
             class="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all resize-y"
-            style="line-height: 1.7"><?= htmlspecialchars($createPostOld['content'] ?? '') ?></textarea>
+            style="line-height: 1.7"><?= htmlspecialchars($createPostOld['content'] ) ?></textarea>
           <?php if (!empty($createPostErrors['content'])): ?>
             <p class="text-sm text-red-600 mt-1"><?= htmlspecialchars($createPostErrors['content']) ?></p>
           <?php endif; ?>

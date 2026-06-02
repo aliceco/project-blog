@@ -7,6 +7,7 @@ require_once __DIR__ . '/../admin/utils.php';
 
 $csrfToken = createCsrfToken();
 
+// Restores eventual errors from forms so that the modals can reopen but do not try to re-submit when reloading the page
 $editProfileErrors = $_SESSION['editProfileErr'] ?? [];
 $createPostErrors = $_SESSION['createPostErr'] ?? [];
 $editPostErrors = $_SESSION['editPostErr'] ?? [];
@@ -20,20 +21,21 @@ $showEditProfileModal = $openModal === 'edit_profile';
 $showCreatePostModal = $openModal === 'create_post';
 $showEditPostModal = $openModal === 'edit_post';
 
+// Check if the path has a valid author
 $authorQuery = trim($_GET['author']);
 $author = getUser($authorQuery);
-if (!$author) { // check if auhtor page exists, if not redirect to home page
+if (!$author) { 
     header('Location: ' . BASE_URL . 'index.php');
     exit('User not found');
 }
 
+// Checks if the session user is logged in, and if so, if they are the owner of the page
 $sessionUserId = $_SESSION['user_id'] ?? NULL;
 $sessionUser = $sessionUserId ? getUserById($sessionUserId) : null;
-
 $can_edit = isLoggedIn() && $sessionUserId === ($author['id'] ?? null);
 
+// Define upload directory
 $uploadDir = __DIR__ . '/../uploads/';
-
 
 // Edit profile form 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_profile')) {
@@ -43,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         exit('Forbidden');
     }
 
+    // Checks csrf token
     if (
         empty($_POST['csrf_token']) ||
         empty($_SESSION['csrf_token']) ||
@@ -50,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
     ) {
         $editProfileErrors['csrf'] = 'Invalid CSRF token.';
     } else {
+        // Puts input variables into an array for easier handling. 
         $input = [
             'firstname' => trim($_POST['firstname']),
             'lastname' => trim($_POST['lastname']),
@@ -59,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             'profile_image' => $_FILES['profile_image'] ?? null
         ];
 
+        // Saves sessions information in variables 
         $sessionFirstname = ($sessionUser['firstname']);
         $sessionLastname = ($sessionUser['lastname']);
         $sessionUsername = ($sessionUser['username']);
@@ -66,11 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         $sessionBio = ($sessionUser['bio']);
         $sessionImagePath = $sessionUser['profile_image'] ?? null;
         $profileImagePath = $sessionImagePath;
-
+    
+        // validates file upload
         $uploadedFile = validateOptionalImageUpload($input['profile_image'], 307200);
-
         $fileUploadSuccess = $uploadedFile['uploaded'];
 
+        // Checks if user have changed any user information
         $changedFirstname = $input['firstname'] !== $sessionFirstname;
         $changedLastname = $input['lastname'] !== $sessionLastname;
         $changedUsername = $input['username'] !== $sessionUsername;
@@ -82,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             $editProfileErrors['profile_image'] = $uploadedFile['error'];
         }
 
+        // Uploads file to file structure and saves path if upload had been validated as a success
         if ($fileUploadSuccess && empty($editProfileErrors['profile_image'])) {
             $newFilename = 'profile_' . $sessionUserId . '_' . bin2hex(random_bytes(4)) . '.' . $uploadedFile['extension'];
             $profileImageDir = $uploadDir . 'profile_images/';
@@ -95,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
             }
         }
 
+        // Validate text input
         if ($input['firstname'] === '') {
             $editProfileErrors['firstname'] = 'First name is required.';
         } elseif ($input['lastname'] === '') {
@@ -123,12 +131,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
                 exit();
             }
 
+            // If no changes were made, provide user with error message
             $editProfileErrors['general'] = $updatedUser === 0
                 ? 'No changes were saved.'
                 : 'Could not save changes. Please try again.';
         }
     }
 
+    // Saves edit profile errors in session and reopens the modal but without resending the form
     if (!empty($editProfileErrors)) {
         $_SESSION['editProfileErr'] = $editProfileErrors;
         $_SESSION['openModal'] = 'edit_profile';
@@ -145,12 +155,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
 }
 
 // Create new post form
+// A lot here is similar to the form handling above so will only comment things that are new
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_post')) {
     // Authorizatison in PHP
     if (!$can_edit) {
         http_response_code(403);
         exit('Forbidden');
     }
+
+    // Checks csrf token
 
     if (
         empty($_POST['csrf_token']) ||
@@ -163,9 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
         $postContent = trim($_POST['content']);
         $postImage = $_FILES['post-image'] ?? null;
 
-        // First validate image
+        // Image Upload handling
         $uploadedFile = validateOptionalImageUpload($postImage, 409600);
-        // save whether uploaded or not
         $fileUploadSuccess = $uploadedFile['uploaded'];
         $postImagePath = null;
 
@@ -206,6 +218,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
         }
     }
 
+    // Saves edit profile errors and the user inpyt in session and reopens the modal but without resending the form, 
+    // But user don't loose their input if an error in any field occur
     if (!empty($createPostErrors)) {
         $_SESSION['createPostErr'] = $createPostErrors;
         $_SESSION['createPostOld'] = [
@@ -227,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action']) === 'create_pos
 
 
 // Edit post form
+// Very similar to the one above
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit_post')) {
     // Authorizatison in PHP
     if (!$can_edit) {
@@ -293,6 +308,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'edit
         }
     }
 
+    // Saves edit profile errors and the user inpyt in session and reopens the modal but without resending the form, 
+    // But user don't loose their input if an error in any field occur
     if (!empty($editPostErrors)) {
         $_SESSION['editPostErr'] = $editPostErrors;
         $_SESSION['editPostOld'] = [
@@ -334,8 +351,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'dele
         } else {
             $deleted = deletePost($postId, $_SESSION['user_id']);
 
-            if ($deleted) {
-
+            if ($deleted) { 
                 $redirect = BASE_URL . 'pages/blog.php?author=' . urlencode($sessionUser['username']) . '&updated=1';
                 header('Location: ' . $redirect);
                 newCSRFToken();
@@ -347,13 +363,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'dele
     }
 }
 
+// Fetch post data from DB
 $posts = getPostsByUser($author['id']);
-
 $selectedPostId = $_GET['post'] ?? 0; // gets the selected post ID from query parameter
 $selectedPost = null;
 
+// Finds the post that the user clicked on
 if ($selectedPostId > 0) {
-    // Finds the post that the user clicked on
     foreach ($posts as $post) {
         if (($post['id'] ?? 0) == $selectedPostId) {
             $selectedPost = $post;

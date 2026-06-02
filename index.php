@@ -7,8 +7,9 @@ require_once __DIR__ . '/admin/utils.php';
 require_once __DIR__ . '/includes/document-head.php';
 require_once __DIR__ . '/components/navbar.php';
 
+// Get Posts
 $posts = getPostsSorted();
-$featuredPost = $posts[0]; // Get the most recent post as the featured post
+$featuredPost = $posts[0]; 
 $featuredPuthor = getUserById($featuredPost['user_id']);
 $featuredPostDate = readableDate($featuredPost['created_at']);
 $featuredUrl = BASE_URL . 'pages/blog.php?author=' . urlencode($featuredPuthor['username']) . '&post=' . $featuredPost['id'];

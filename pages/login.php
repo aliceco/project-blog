@@ -8,13 +8,12 @@ require_once __DIR__ . '/../admin/utils.php';
 
 $csrfToken = createCsrfToken();
 
-
-
 function validateLoginInput($username, $password)
 {
   $errors = [];
 
-  if (checkIfEmpty($username) || checkIfEmpty($password)) {
+  // Check if fields are empty
+  if (checkIfEmpty($username) || checkIfEmpty($password)) { 
     $errors['general'] = 'All fields are required.';
     return $errors;
   } 
@@ -24,6 +23,7 @@ function validateLoginInput($username, $password)
 
 function validateRegistrationInput($firstname, $lastname, $username, $email,  $password, $gdpr)
 {
+  // Validates registration input, sends appropriate error message if error
   $errors = [];
 
   if (checkIfEmpty($username)) {
@@ -53,12 +53,14 @@ function validateRegistrationInput($firstname, $lastname, $username, $email,  $p
   return $errors;
 }
 
-$errors = $_SESSION['form_errors'] ?? []; // Stores errors from forms
+// Stores information about session if error occurs so user don't have to re-enter all information
+$errors = $_SESSION['form_errors'] ?? []; 
 $activeTab = $_SESSION['active_tab'] ?? 'login';
 $formData = $_SESSION['form_data'] ?? [];
 
 unset($_SESSION['form_errors'], $_SESSION['active_tab'], $_SESSION['form_data']); // Resets temporary form state after load
 
+// Gets old field values
 function oldFieldValue($field, $errors, $formData)
 {
   if (!empty($errors[$field])) {
@@ -127,8 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
+  // Avoids resubmitting form when refreshing page & saves errors in session to show them to user if error has occured
   if (!empty($errors)) {
-    // Avoids resubmitting form when refreshing page & saves errors in session to show them to user
     $_SESSION['form_errors'] = $errors;
     $_SESSION['active_tab'] = $activeTab;
     $_SESSION['form_data'] = [

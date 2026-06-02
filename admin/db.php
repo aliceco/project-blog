@@ -122,7 +122,7 @@ function updateUserProfile($id, $newFirstname, $newLastname, $newUsername, $newT
 }
 
 function usernameExists($username)
-{
+{  // Checks that user exists
    return getUser($username) !== null;
 }
 
@@ -201,6 +201,7 @@ function getUsers()
 
 function deletePost($post_id, $user_id)
 {
+    // Delete post where post id matches user id
     $connection = connect();
 
     $sql = "DELETE FROM posts WHERE id = ? AND user_id = ?";
@@ -217,9 +218,6 @@ function deletePost($post_id, $user_id)
 
     mysqli_stmt_close($stmt);
 
-    // Returnerar antal påverkade rader:
-    // 1+ = något uppdaterades
-    // 0  = inget ändrades (t.ex. fel id eller samma värde)
     return $affectedRows;
 }
 
@@ -244,6 +242,7 @@ function getResult($stmt)
 }
 
 function getPostsSorted(){
+    // Gets and sorts 6 posts from DB, newest first 
     $connection = connect();
 
     $sql = "SELECT * FROM posts ORDER BY created_at DESC LIMIT 6";  
@@ -265,7 +264,7 @@ function getPostsByUser($user_id)
 {
     $connection = connect();
 
-    // Hämtar inlägg från specifik användare (user_id) 
+    // Gets post from a specific user
     $sql = "SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC";
 
     $stmt = mysqli_prepare($connection, $sql);
@@ -285,7 +284,7 @@ function getPostsByUser($user_id)
 
 function addPost($user_id, $title, $content, $image_path)
 {
-    // Add image upload
+    // New post is added to DB
     $connection = connect();
 
     $sql = "INSERT INTO posts (user_id, title, content, image_path) VALUES (?, ?, ?, ?)";
@@ -334,9 +333,6 @@ function updatePost($id, $user_id, $newTitle, $newContent, $newImagePath =null)
 
     mysqli_stmt_close($stmt);
 
-    // Returnerar antal påverkade rader:
-    // 1+ = något uppdaterades
-    // 0  = inget ändrades (t.ex. fel id eller samma värde)
     return $affectedRows;
 }
 

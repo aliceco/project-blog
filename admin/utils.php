@@ -1,8 +1,8 @@
 <?php
 
-// takes a timestamp and turns into readable date format, if the timestamp is invalid, it returns the original string
 function readableDate($createdAt)
 {
+    // takes a timestamp and turns into readable date format, if the timestamp is invalid, it returns the original string
     if (!empty($createdAt)) {
         $timestamp = strtotime((string) $createdAt);
         $date = $timestamp ? date('M j, Y', $timestamp) : (string) $createdAt;
@@ -20,6 +20,7 @@ function checkIfEmpty($input)
 
 function validateFile($file)
 {
+    // Validates that the uploaded file exists and is a supported image type
     if (empty($file) || !isset($file['tmp_name']) || $file['tmp_name'] === '') {
         return ['ok' => false, 'error' => 'No file uploaded.'];
     }
@@ -45,6 +46,7 @@ function validateFile($file)
 
 function getUploadErrorMessage($errorCode)
 {
+    // Maps errors given from $_FILE[] to error messages
     $uploadErrors = [
         UPLOAD_ERR_OK => 'No errors.',
         UPLOAD_ERR_INI_SIZE => 'The file is too large (php.ini limit).',
@@ -61,6 +63,8 @@ function getUploadErrorMessage($errorCode)
 
 function validateOptionalImageUpload($file, $maxBytes = 512000)
 {
+    // Maps error messages to the correct return object. 
+
     if (empty($file) || !isset($file['error'])) {
         return ['ok' => true, 'uploaded' => false];
     }

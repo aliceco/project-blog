@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,8 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($head) ?></title>
-    <link rel="stylesheet" href="<?= $BASE_URL ?>css/themes.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/themes.css">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <!-- This styling will cause HTML validation to give an error -->
     <style type="text/tailwindcss">
       @theme {
         --color-background: var(--background);

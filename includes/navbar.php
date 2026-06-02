@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../includes/config.php'; ?>
+<?php require_once __DIR__ . '/config.php'; ?>
 <header class="border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm z-10">
     <nav class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
         <h1 class="text-2xl"><a href="<?= BASE_URL ?>index.php" class="hover:text-accent transition-colors">

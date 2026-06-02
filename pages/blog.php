@@ -400,7 +400,7 @@ $selectedContent = nl2br(htmlspecialchars($selectedPost['content'] ?? ''));
 $selectedPostImagePath = $selectedPost['image_path'] ?? null;
 
 require_once __DIR__ . '/../includes/document-head.php';
-require_once __DIR__ . '/../components/navbar.php';
+require_once __DIR__ . '/../includes/navbar.php';
 ?>
 
 <main class="max-w-6xl mx-auto px-6 py-8">

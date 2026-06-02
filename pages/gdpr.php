@@ -3,7 +3,7 @@
 $head = 'Privacy Policy';
 require_once __DIR__ . '/../admin/session.php';
 require_once __DIR__ . '/../includes/document-head.php';
-require_once __DIR__ . '/../components/navbar.php';
+require_once __DIR__ . '/../includes/navbar.php';
 
 ?>
 
